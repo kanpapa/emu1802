@@ -1,0 +1,31 @@
+0000-                  2                .TF     echoback.hex,HEX
+0000-                  3        *
+0000-                  4        * Echoback program for EMU1802 IDIOT/4
+0000-                  5        * Using IDIOT routine
+0000-                  6        *
+0000-                  7                .CR     1802
+8000-                  8                .OR     $8000
+8000-                  9
+8000-F8 80            10 (   2) INIT:   LDI     /INIT
+8002-B4               11 (   2)         PHI     4
+8003-B5               12 (   2)         PHI     5
+8004-F8 17            13 (   2)         LDI     #TMPBUF
+8006-A4               14 (   2)         PLO     4       ; TMPBUF -> R4 to the TYPE immeiate location.
+8007-F8 0B            15 (   2) LOOP:   LDI     #MAIN
+8009-A5               16 (   2)         PLO     5       ; MAIN -> R5 .. Main program address
+800A-D5               17 (   2)         SEP     5       ; Change program counter
+800B-                 18
+800B-F8 01            19 (   2) MAIN:   LDI     $01
+800D-B3               20 (   2)         PHI     3
+800E-F8 3E            21 (   2)         LDI     $3E
+8010-A3               22 (   2)         PLO     3       ; $013E -> R3 .. READ entry address
+8011-D3               23 (   2)         SEP     3       ; Call READ
+8012-                 24
+8012-54               25 (   2)         STR     4
+8013-F8 9C            26 (   2)         LDI     $9C
+8015-A3               27 (   2)         PLO     3       ; $019C -> R3 .. TYPE entry address
+8016-D3               28 (   2)         SEP     3       ; Call TYPE
+8017-                 29        TMPBUF: .BS     1       ; TYPE imm. strage location.
+8018-30 07            30 (   2)         BR      LOOP
+801A-                 31
+801A-                 32                .EN
