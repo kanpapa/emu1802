@@ -14,6 +14,8 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 - kicad/emu1802_mini_bom.pdf - BOM of EMU1802-mini
 - test_programs - Test programs for EMU1802 hardware
 - tools/bin2hexsrc.py - A tool to convert binaries to HEX
+- EMU1802mini_Setup_ja.md - Setup manual for EMU1802mini (Japanese)
+- README.md - This manual
 
 ## Development tools
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)
