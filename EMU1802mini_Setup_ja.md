@@ -24,9 +24,17 @@
 1. Enterキーを押すと、IDIOT/4という起動メッセージが表示されます。
 
 ## IDIOTモニタの使い方
-IDIOTモニタのサイトを参照してください。  
-- [COSMAC 1802 "IDIOT" monitor Software](https://www.retrotechnology.com/memship/mship_idiot.html)
+基本的なコマンドをまとめました。指定する値は16進数です。
 
+| コマンド | 機能 |
+----|---- 
+|?Maaaaa xx|アドレスaaaaからxxバイト分のメモリーをダンプします |
+|!Maaaaa dd..dd;|アドレスaaaaから、ddの内容を書き込みます。セミコロンをつけると次の行の内容も継続して書き込まれます。これにより?Mコマンドでダンプした内容をキャプチャしておけば、キャプチャした内容をそのまま復元できます。|
+|Paaaa|割り込みを有効にして、PレジスタとXレジスタを00に設定した状態で、aaaaアドレスからのプログラムを実行します。|
+|Rxp|Xレジスタにxを設定し、Pレジスタにpを設定します。これによりPレジスタで指定されたレジスタの値が実行アドレスとなります。|
+
+他にも有用なコマンドがあるかもしれません。詳細はソースファイルまたはIDIOTモニタのサイトを参照してください。  
+- [COSMAC 1802 "IDIOT" monitor Software](https://www.retrotechnology.com/memship/mship_idiot.html)
 
 ## ファームウェアのカスタマイズ方法
 
