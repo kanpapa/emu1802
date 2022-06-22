@@ -11,7 +11,7 @@
 ## ファームウェアの書き込み手順
 1. emu1802mini.Xを適当な場所に展開します。
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
-1. プロジェクトを開くで上記フォルダを指定して開きます。
+1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
 1. ビルドを行いコンパイルができることを確認します。
 1. EMU1802-miniにSNAPを接続し、PCに接続します。
 1. EMU1802-miniの電源を投入します。
