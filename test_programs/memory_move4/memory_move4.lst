@@ -1,0 +1,68 @@
+0000-                  2                .TF     memory_move4.bin,BIN
+0000-                  3
+0000-                  4        ;       MEMORY MOVE PROGRAM 4
+0000-                  5
+0000-                  6        PROGAD  .EQ     $0000
+0000-                  7        SOURCE  .EQ     $0000
+8008-                  8        DESTIN  .EQ     $8008
+0030-                  9        MAXADD  .EQ     $0030
+8039-                 10        MAXDUMP .EQ     $8039
+0000-                 11
+0000-                 12        ; Register
+0000-                 13        R0              .EQ     0
+0001-                 14        R1              .EQ     1
+0002-                 15        R2              .EQ     2
+0003-                 16        R3              .EQ     3
+0004-                 17        R4              .EQ     4
+0005-                 18        R5              .EQ     5
+0006-                 19        R6              .EQ     6
+0007-                 20        R7              .EQ     7
+0008-                 21        R8              .EQ     8
+0009-                 22        R9              .EQ     9
+000A-                 23        RA              .EQ     10
+000B-                 24        RB              .EQ     11
+000C-                 25        RC              .EQ     12
+000D-                 26        RD              .EQ     13
+000E-                 27        RE              .EQ     14
+000F-                 28        RF              .EQ     15
+0000-                 29
+0000-                 30                .CR     1802
+0000-                 31                .OR     PROGAD
+0000-                 32
+0000-F8 00            33 (   2) START:  LDI     /BEG
+0002-B9               34 (   2)         PHI     R9
+0003-F8 07            35 (   2)         LDI     #BEG
+0005-A9               36 (   2)         PLO     R9
+0006-D9               37 (   2)         SEP     R9
+0007-                 38
+0007-F8 00            39 (   2) BEG:    LDI     /SOURCE
+0009-BA               40 (   2)         PHI     RA
+000A-F8 00            41 (   2)         LDI     #SOURCE
+000C-AA               42 (   2)         PLO     RA
+000D-                 43
+000D-F8 80            44 (   2)         LDI     /DESTIN
+000F-BB               45 (   2)         PHI     RB
+0010-F8 08            46 (   2)         LDI     #DESTIN
+0012-AB               47 (   2)         PLO     RB
+0013-                 48
+0013-4A               49 (   2) REPEAT: LDA     RA
+0014-5B               50 (   2)         STR     RB
+0015-1B               51 (   2)         INC     RB
+0016-8A               52 (   2)         GLO     RA
+0017-FB 31            53 (   2)         XRI     #MAXADD+1
+0019-3A 13            54 (   2)         BNZ     REPEAT
+001B-                 55
+001B-F8 80            56 (   2) DUMP:   LDI     /DESTIN
+001D-BB               57 (   2)         PHI     RB
+001E-F8 08            58 (   2)         LDI     #DESTIN
+0020-AB               59 (   2)         PLO     RB
+0021-EB               60 (   2)         SEX     RB
+0022-61               61 (   2) REPEAT2: OUT    1
+0023-8B               62 (   2)         GLO     RB
+0024-FB 3A            63 (   2)         XRI     #MAXDUMP+1
+0026-3A 22            64 (   2)         BNZ     REPEAT2
+0028-                 65
+0028-                 66
+0028-30 28            67 (   2) ENDLOOP: BR ENDLOOP
+002A-                 68
+002A-                 69                .EN

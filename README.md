@@ -12,6 +12,7 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 - kicad/emu1802_sch.pdf - schematic of EMU1802
 - kicad/emu1802_mini_sch.pdf - schematic of EMU1802-mini
 - kicad/emu1802_mini_bom.pdf - BOM of EMU1802-mini
+- test_programs - Test programs for EMU1802 hardware
 - tools/bin2hexsrc.py - A tool to convert binaries to HEX
 
 ## Development tools

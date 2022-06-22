@@ -1,0 +1,24 @@
+0000-                  2                .TF     count3.bin,BIN
+0000-                  3        *
+0000-                  4        * Counter program 3 for COSMAC
+0000-                  5        * SB-Assembler
+0000-                  6        *
+0000-                  7                .CR     1802    ;To load the 1802 cross overlay
+0000-                  8                .OR     $0000
+0000-                  9        *
+0000-F8 80            10 (   2) START   LDI     /RAM    ;D <- $8C  $8C00
+0002-B3               11 (   2)         PHI     3       ;R(3).1 <- D
+0003-F8 08            12 (   2)         LDI     #RAM    ;D <- $00
+0005-A3               13 (   2)         PLO     3       ;R(3).0 <- D
+0006-                 14
+0006-E3               15 (   2)         SEX     3       ;X <- 3
+0007-84               16 (   2) LOOP1   GLO     4       ;D <- R(4).0
+0008-53               17 (   2)         STR     3       ;M(R(3)) <- D
+0009-61               18 (   2)         OUT     1       ;BUS <- M(R(3)); R(3)++
+000A-23               19 (   2)         DEC     3       ;R(3)--
+000B-14               20 (   2)         INC     4       ;R(4)++
+000C-30 07            21 (   2)         BR      LOOP1   ;Branch to LOOP1
+000E-                 22        *
+8008-                 23        RAM     .EQ     $8008
+000E-                 24
+000E-                 25                .EN
