@@ -11,7 +11,7 @@
 ## ファームウェアの書き込み手順
 1. emu1802mini.Xを適当な場所に展開します。
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
-1. プロジェクトを開くで上記フォルダを指定して開きます。
+1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
 1. ビルドを行いコンパイルができることを確認します。
 1. EMU1802-miniにSNAPを接続し、PCに接続します。
 1. EMU1802-miniの電源を投入します。
@@ -24,9 +24,17 @@
 1. Enterキーを押すと、IDIOT/4という起動メッセージが表示されます。
 
 ## IDIOTモニタの使い方
-IDIOTモニタのサイトを参照してください。  
-- [COSMAC 1802 "IDIOT" monitor Software](https://www.retrotechnology.com/memship/mship_idiot.html)
+基本的なコマンドをまとめました。指定する値は16進数です。
 
+| コマンド | 機能 |
+----|---- 
+|?Maaaaa xx|アドレスaaaaからxxバイト分のメモリーをダンプします |
+|!Maaaaa dd..dd;|アドレスaaaaから、ddの内容を書き込みます。セミコロンをつけると次の行の内容も継続して書き込まれます。これにより?Mコマンドでダンプした内容をキャプチャしておけば、キャプチャした内容をそのまま復元できます。|
+|Paaaa|割り込みを有効にして、PレジスタとXレジスタを00に設定した状態で、aaaaアドレスからのプログラムを実行します。|
+|Rxp|Xレジスタにxを設定し、Pレジスタにpを設定します。これによりPレジスタで指定されたレジスタの値が実行アドレスとなります。|
+
+他にも有用なコマンドがあるかもしれません。詳細はソースファイルまたはIDIOTモニタのサイトを参照してください。  
+- [COSMAC 1802 "IDIOT" monitor Software](https://www.retrotechnology.com/memship/mship_idiot.html)
 
 ## ファームウェアのカスタマイズ方法
 
