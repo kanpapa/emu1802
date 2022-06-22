@@ -6,11 +6,12 @@ The EMU1802 is replacement the CPU of the EMUZ80 with a COSMAC.
 The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.  
 
 ## Repository Contents
-- emu1802.X - PIC18F47Q43 ROM RAM and UART emulation firmware for EMU1802  
-- emu1802mini.X - PIC18F27Q43 ROM RAM and UART emulation firmware for EMU1802-mini  
-- kicad/emu1802_sch.pdf - schematic of EMU1802   
-- kicad/emu1802_mini_sch.pdf - schematic of EMU1802-mini   
-- kicad/emu1802_mini_bom.pdf - BOM of EMU1802-mini   
+- emu1802.X - PIC18F47Q43 ROM RAM and UART emulation firmware for EMU1802
+- emu1802mini.X - PIC18F27Q43 ROM RAM and UART emulation firmware for EMU1802-mini
+- idiotmon - IDIOT/4 monitor and sample programs
+- kicad/emu1802_sch.pdf - schematic of EMU1802
+- kicad/emu1802_mini_sch.pdf - schematic of EMU1802-mini
+- kicad/emu1802_mini_bom.pdf - BOM of EMU1802-mini
 - tools/bin2hexsrc.py - A tool to convert binaries to HEX
 
 ## Development tools
@@ -40,5 +41,5 @@ IDIOT/4 MONITOR FOR THE 1802
   WRITTEN: 6/23/82 BY LEE HART  
   COPYRIGHT 1982-85 BY TMSI  
   This program may be used for any noncommercial use free of charge.  
-  fixes by Herb Johnson HRJ April 2010, Jan 2014
+  fixes by Herb Johnson HRJ April 2010, Jan 2014  
   https://www.retrotechnology.com/memship/mship_idiot.html
