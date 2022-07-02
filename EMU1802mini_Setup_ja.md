@@ -89,3 +89,28 @@ const unsigned char rom[ROM_SIZE] = {
    :
 }
 ```
+
+### BASICを動かす方法
+Lee A. Hart.さんの[The 1802 Membership Card](http://www.sunrise-ev.com/1802.htm)用のMCBASIC3が動きます。  
+
+このページにある[MCBASIC3.bin](http://www.sunrise-ev.com/MembershipCard/MCBASIC3.bin)を使用してください。バイナリのサイズは16Kbyteですので、ソースのROMサイズを以下のように変更してください。  
+```
+#define ROM_SIZE 0x4000 // ROM size 16k bytes
+```
+あとは、ダウンロードしたMCBASIC3.binをbin2hexsrc.pyでソースに組み込むデータを作成して、ROM領域に組み込んでください。  
+これもソフトウェアシリアルを使用しますので、USBシリアルをCOM3端子に接続してください。シリアル速度の設定は以下の通りです。  
+- Speed 600bps
+- Data 8bit
+- Parity none
+- Stop 1bit
+
+正常に起動すると以下のように表示されます。
+```
+WELCOME TO THE 1802 BASIC3 V1.1
+(C)1981 RCA
+C/W?
+```
+C/W?とありますが、CはCOLD START、WはWARM STARTです。  
+Cを入力するとREADYと表示され、入力待ちを表すコロン(:)が表示されます。この状態でBASICプログラムが入力できます。  
+詳しい使い方はThe 1802 Membership CardのサイトにBASIC3 User Manualがありますのでそちらを参照ください。  
+なお、ターミナルプログラムからファイルをアップロードしようとすると取りこぼしますので適度な送信遅延をいれてください。  
