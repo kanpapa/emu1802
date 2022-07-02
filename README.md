@@ -6,20 +6,21 @@ The EMU1802 is replacement the CPU of the EMUZ80 with a COSMAC.
 The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.  
 
 ## Repository Contents
-- emu1802.X - PIC18F47Q43 ROM RAM and UART emulation firmware for EMU1802
-- emu1802mini.X - PIC18F27Q43 ROM RAM and UART emulation firmware for EMU1802-mini
-- idiotmon - IDIOT/4 monitor and sample programs
-- kicad/emu1802_sch.pdf - schematic of EMU1802
-- kicad/emu1802_mini_sch.pdf - schematic of EMU1802-mini
-- kicad/emu1802_mini_bom.pdf - BOM of EMU1802-mini
-- test_programs - Test programs for EMU1802 hardware
-- tools/bin2hexsrc.py - A tool to convert binaries to HEX
-- EMU1802mini_Setup_ja.md - Setup manual for EMU1802mini (Japanese)
-- README.md - This manual
+- [emu1802.X](/emu1802.X/) - PIC18F47Q43 ROM RAM and UART emulation firmware for EMU1802
+- [emu1802mini.X](/emu1802mini.X/) - PIC18F27Q43 ROM RAM and UART emulation firmware for EMU1802-mini
+- [idiotmon](/idiotmon/) - IDIOT/4 monitor and sample programs
+- [kicad/emu1802_sch.pdf](/kicad/emu1802_sch.pdf) - schematic of EMU1802
+- [kicad/emu1802_mini_sch.pdf](/kicad/emu1802_mini_sch.pdf) - schematic of EMU1802-mini
+- [kicad/emu1802_mini_bom.pdf](/kicad/emu1802_mini_bom.pdf) - BOM of EMU1802-mini
+- [test_programs](/test_programs/) - Test programs for EMU1802 hardware
+- [tools/bin2hexsrc.py](/tools/bin2hexsrc.py) - A tool to convert binaries to HEX
+- [EMU1802mini_Setup_ja.md](/EMU1802mini_Setup_ja.md) - Setup manual for EMU1802mini (Japanese)
+- [README.md](/README.md) - This manual
 
 ## Development tools
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)
 - [SB-Assemblers](https://www.sbprojects.net/sbasm/)
+- Python3
 
 ## Blog
 You can also refer to my blog. (in Japanese)  
@@ -38,7 +39,7 @@ EMUZ80 - The computer with only Z80 and PIC18F47Q43
   Written by Tetsuya Suzuki  
   https://github.com/vintagechips/emuz80  
 
-The firmware includes the IDIOT monitor.   
+The firmware includes the IDIOT monitor.  
 
 IDIOT/4 MONITOR FOR THE 1802  
   WRITTEN: 6/23/82 BY LEE HART  
