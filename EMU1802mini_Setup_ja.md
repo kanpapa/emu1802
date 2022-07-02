@@ -1,7 +1,7 @@
 # EMU1802-miniのセットアップ
 
 ## ハードウェアの製作
-1. 回路図とBOMを参考にしてパーツを入手します。
+1. [回路図](/kicad/emu1802_mini_sch.pdf)と[BOM](/kicad/emu1802_mini_bom.pdf)を参考にしてパーツを入手します。
 1. 専用基板があれば基板に実装してハンダ付けします。基板がない場合はブレッドボードを使って配線しても良いでしょう。
 
 ## 開発環境の準備
@@ -9,7 +9,7 @@
 - ファームウェアのROM領域を変更する場合は[SB-Assemblers](https://www.sbprojects.net/sbasm/)を使用します。Python3が動作する環境が必要です。私の場合はWSL2環境にインストールしています。  
 
 ## ファームウェアの書き込み手順
-1. emu1802mini.Xを適当な場所に展開します。
+1. [emu1802mini.X](/emu1802.X)を適当な場所に展開します。
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
 1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
 1. ビルドを行いコンパイルができることを確認します。
@@ -29,7 +29,7 @@
 指定する値は16進数です。
 
 | コマンド | 機能 |
-----|---- 
+----|----
 |?Maaaa xx|アドレスaaaaからxxバイト分のメモリーをダンプします |
 |!Maaaa dd..dd;|アドレスaaaaから、ddの内容を書き込みます。セミコロンをつけると次の行の内容も継続して書き込まれます。これにより?Mコマンドでダンプした内容をキャプチャしておけば、キャプチャした内容をそのまま復元できます。|
 |Paaaa|割り込みを有効にして、PレジスタとXレジスタを00に設定した状態で、aaaaアドレスからのプログラムを実行します。|
@@ -64,7 +64,7 @@ main.cの86〜88行で設定できます。現在はROMエリアは$0000-$0400�
 ```
 
 ### CPUクロックの変更
-main.cの77行目の値を変更します。現在は0.2MHzになっています。あまり大きくするとタイミングが合わなくなり動かなくなります。
+main.cの77行目の値を変更します。現在は0.2MHzになっています。現在のファームウェアではこれ以上速くするとタイミングが合わなくなり動かなくなります。
 
 ```
 #define Z80_CLK   200000UL // CDP1802 clock frequency(0.2MHz)
@@ -77,7 +77,7 @@ main.cの77行目の値を変更します。現在は0.2MHzになっています
 ```
 sbasm idiot_0000.asm
 ```
-生成されたバイナリファイルを16進データ形式に変換するPythonプログラム tools/bin2hexsrc.py を用意していますので、これを使うとソースに組み込むデータを簡単に作成できます。  
+生成されたバイナリファイルを16進データ形式に変換するPythonプログラム [tools/bin2hexsrc.py](tools/bin2hexsrc.py) を用意していますので、これを使うとソースに組み込むデータを簡単に作成できます。  
 使い方は以下の通りです。
 ```
 bin2hexsrc.py idiot_0000.bin > idiot_0000.hexsrc
@@ -93,12 +93,12 @@ const unsigned char rom[ROM_SIZE] = {
 ### BASICを動かす方法
 Lee A. Hart.さんの[The 1802 Membership Card](http://www.sunrise-ev.com/1802.htm)用のMCBASIC3が動きます。  
 
-このページにある[MCBASIC3.bin](http://www.sunrise-ev.com/MembershipCard/MCBASIC3.bin)を使用してください。バイナリのサイズは16Kbyteですので、ソースのROMサイズを以下のように変更してください。  
+[The 1802 Membership Card](http://www.sunrise-ev.com/1802.htm)のページにある[MCBASIC3.bin](http://www.sunrise-ev.com/MembershipCard/MCBASIC3.bin)を使用してください。バイナリのサイズは16Kbyteですので、ソースのROMサイズを以下のように変更してください。  
 ```
 #define ROM_SIZE 0x4000 // ROM size 16k bytes
 ```
 あとは、ダウンロードしたMCBASIC3.binをbin2hexsrc.pyでソースに組み込むデータを作成して、ROM領域に組み込んでください。  
-これもソフトウェアシリアルを使用しますので、USBシリアルをCON3端子に接続してください。シリアル速度の設定は以下の通りです。  
+これもソフトウェアシリアルを使用しますので、USBシリアルをCON3に接続してください。シリアル速度の設定は以下の通りです。  
 - Speed 600bps
 - Data 8bit
 - Parity none
@@ -113,4 +113,4 @@ C/W?
 C/W?とありますが、CはCOLD START、WはWARM STARTです。  
 Cを入力するとREADYと表示され、入力待ちを表すコロン(:)が表示されます。この状態でBASICプログラムが入力できます。  
 詳しい使い方はThe 1802 Membership CardのサイトにBASIC3 User Manualがありますのでそちらを参照ください。  
-なお、ターミナルプログラムからファイルをアップロードしようとすると取りこぼしますので適度な送信遅延をいれてください。  
+なお、少し速くタイピングしたり、ターミナルプログラムからファイルをアップロードしようとすると入力文字を取りこぼしますので適度な送信遅延をいれてください。  
