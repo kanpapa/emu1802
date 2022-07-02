@@ -98,7 +98,7 @@ Lee A. Hart.さんの[The 1802 Membership Card](http://www.sunrise-ev.com/1802.h
 #define ROM_SIZE 0x4000 // ROM size 16k bytes
 ```
 あとは、ダウンロードしたMCBASIC3.binをbin2hexsrc.pyでソースに組み込むデータを作成して、ROM領域に組み込んでください。  
-これもソフトウェアシリアルを使用しますので、USBシリアルをCOM3端子に接続してください。シリアル速度の設定は以下の通りです。  
+これもソフトウェアシリアルを使用しますので、USBシリアルをCON3端子に接続してください。シリアル速度の設定は以下の通りです。  
 - Speed 600bps
 - Data 8bit
 - Parity none
