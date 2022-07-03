@@ -7,8 +7,24 @@
   Written by Tetsuya Suzuki
 
   Target: EMU1802mini - The computer with only COSMAC CDP1802 and PIC18F27Q43
-  Modifed by Kazuhiro Ouchi 2022-06-19
+  Modifed by Kazuhiro Ouchi
+  V1.0 2022-06-19
+  V1.1 2022-07-03
 */
+
+//
+// EMU1802-mini
+//
+// PORTB: ADDRESS BUS
+// PORTC: DATA BUS
+// RA7 RXD
+// RA6 TXD
+// RA5 ~MRD
+// RA4 CLOCK
+// RA3 TPA
+// RA2 TPB
+// RA1 ~CLEAR
+// RA0 ~MWR
 
 // CONFIG1
 #pragma config FEXTOSC = OFF    // External Oscillator Selection (Oscillator not enabled)
@@ -124,10 +140,10 @@ char getch(void) {
 // Never called, logically
 void __interrupt(irq(default),base(8)) Default_ISR(){}
 
+#ifdef USED_IOC
 /**
    IOCAF1 Interrupt Service Routine TPB(RA1) Rising edge
  */
-// Called at COSMAC TPB(RA1) Rising edge
 // Called at COSMAC TPB(RA2) Rising edge for EMU1802mini
 void IOCAF2_ISR(void) {
     IOCAFbits.IOCAF2 = 0;
@@ -163,7 +179,6 @@ void IOCAF2_ISR(void) {
 /**
    IOCAF2 Interrupt Service Routine
 */
-// Called at COSMAC TPA(RA2) Falling edge
 // Called at COSMAC TPA(RA3) Falling edge for EMU1802mini
 void IOCAF3_ISR(void) {
     IOCAFbits.IOCAF3 = 0;
@@ -183,23 +198,55 @@ void __interrupt(irq(IOC),base(8)) PIN_MANAGER_IOC()
         IOCAF3_ISR();  
     }	
 }
+#endif
 
-//  Called at COSMAC TPB(RA1) Falling edge
-//  Called at COSMAC TPB(RA2) Falling edge for EMU1802mini
+//  Called at COSMAC TPA(RA3) Riging edge for EMU1802mini
 void __interrupt(irq(INT0),base(8)) INT0_ISR(){
     INT0IF = 0; // Clear interrupt flag
     db_setin(); // Set data bus as input
+    address.h = PORTB;  // Read address high
+    //printf("SET HIGH ADRS:%04X.\r\n",address.w);
+}
+
+//  Called at COSMAC TPB(RA2) Riging edge for EMU1802mini
+void __interrupt(irq(INT1),base(8)) INT1_ISR(){
+    address.l = PORTB; // Read address low  
+    if(!RA5) { // COSMAC memory read cycle (MRD active)
+        db_setout(); // Set data bus as output
+        if(address.w < ROM_SIZE){ // ROM area
+            LATC = rom[address.w]; // Out ROM data
+            //printf("RD ADRS:%04X DATA:%02X\r\n",address.w,rom[address.w]);  
+        } else if((address.w >= RAM_TOP) && (address.w < (RAM_TOP + RAM_SIZE))){ // RAM area
+            LATC = ram[address.w - RAM_TOP]; // RAM data
+            //printf("RD ADRS:%04X DATA:%02X\r\n",address.w,ram[address.w - RAM_TOP]);  
+        } else if(address.w == UART_CREG){ // UART control register
+            LATC = PIR9; // U3 flag
+        } else if(address.w == UART_DREG){ // UART data register
+            LATC = U3RXB; // U3 RX buffer
+        } else { // Out of memory
+            LATC = 0xff; // Invalid data
+        }
+    }
+    INT1IF = 0; // Clear interrupt flag
+}
+
+//  Called at COSMAC MWR(RA0) Falling edge for EMU1802mini
+void __interrupt(irq(INT2),base(8)) INT2_ISR(){
+    address.l = PORTB; // Read address low
+    // COSMAC memory write cycle (MWR active)
+    if((address.w >= RAM_TOP) && (address.w < (RAM_TOP + RAM_SIZE))){ // RAM area
+        ram[address.w - RAM_TOP] = PORTC; // Write into RAM
+        //printf("WRITE RAM ADRS:%04X DATA:%02X\r\n",address.w,ram[address.w - RAM_TOP]);  
+    } else if(address.w == UART_DREG) { // UART data register
+        U3TXB = PORTC; // Write into U3 TX buffer
+    }
+    INT2IF = 0; // Clear interrupt flag
 }
 
 // main routine
 void main(void) {
     // System initialize
     OSCFRQ = 0x08; // 64MHz internal OSC
-
-    // Address bus A15-A8 pin (RD0-RD7) --- Unused
-    //ANSELD = 0x00; // Disable analog function
-    //WPUD = 0xff; // Week pull up
-    //TRISD = 0xff; // Set as input
 
     // Address bus A7-A0 pin (RB0-RB7)
     ANSELB = 0x00; // Disable analog function
@@ -228,7 +275,6 @@ void main(void) {
     WPUA5 = 1; // Week pull up
     TRISA5 = 1; // Set as intput
 
-    // clock(RA3) by NCO FDC mode
     // clock(RA4) by NCO FDC mode for EMU1802mini
     RA4PPS = 0x3f; // RA4 asign NCO1
     ANSELA4 = 0; // Disable analog function
@@ -242,31 +288,28 @@ void main(void) {
     NCO1EN = 1;   // NCO enable
 
     // UART3 initialize
-    //U3BRG = 416; // 9600bps @ 64MHz
-    //U3RXEN = 1; // Receiver enable
-    //U3TXEN = 1; // Transmitter enable
+    U3BRG = 416; // 9600bps @ 64MHz
+    U3RXEN = 1; // Receiver enable
+    U3TXEN = 1; // Transmitter enable
 
     // UART3 Receiver
-    //ANSELA7 = 0; // Disable analog function
-    //TRISA7 = 1; // RX set as input
-    //U3RXPPS = 0x07; //RA7->UART3:RX3;
+    ANSELA7 = 0; // Disable analog function
+    TRISA7 = 1; // RX set as input
+    U3RXPPS = 0x07; //RA7->UART3:RX3;
 
     // UART3 Transmitter
-    //ANSELA6 = 0; // Disable analog function
-    //LATA6 = 1; // Default level
-    //TRISA6 = 0; // TX set as output
-    //RA6PPS = 0x26;  //RA6->UART3:TX3;
+    ANSELA6 = 0; // Disable analog function
+    LATA6 = 1; // Default level
+    TRISA6 = 0; // TX set as output
+    RA6PPS = 0x26;  //RA6->UART3:TX3;
 
-    //U3ON = 1; // Serial port enable
+    U3ON = 1; // Serial port enable
     
-    
-    // TPB(RA1) input pin
     // TPB(RA2) input pin for EMU1802mini
     ANSELA2 = 0; // Disable analog function
     WPUA2 = 1; // Week pull up
     TRISA2 = 1; // Set as input
 
-    // TPA(RA2) input pin
     // TPA(RA3) input pin for EMU1802mini
     ANSELA3 = 0; // Disable analog function
     WPUA3 = 1; // Week pull up
@@ -292,6 +335,7 @@ void main(void) {
     // Assign peripheral interrupt priority vectors
     IPR0bits.IOCIP = 1;
 
+#ifdef USED_IOC
     /**
     IOCx registers 
     */
@@ -314,14 +358,26 @@ void main(void) {
  
     // Enable IOCI interrupt 
     PIE0bits.IOCIE = 1; 
+#endif
 
     // INT0 VI enable
-    // COSMAC TPB(RA1) Falling edge
-    //INT0PPS = 0x1; //RA1->INTERRUPT MANAGER:INT0;
-    INT0PPS = 0x2; //RA2->INTERRUPT MANAGER:INT0; for EMU1802mini
-    INT0EDG = 0; // 0: Falling edge 1: Rising edge
+    // COSMAC TPA(RA3) Riging edge
+    INT0PPS = 0x3; //RA3->INTERRUPT MANAGER:INT0; for EMU1802mini
+    INT0EDG = 1; // 0: Falling edge 1: Rising edge
     INT0IE = 1;
    
+    // INT1 VI enable
+    // COSMAC TPB(RA2) Riging edge
+    INT1PPS = 0x2; //RA2->INTERRUPT MANAGER:INT1; for EMU1802mini
+    INT1EDG = 1; // 0: Falling edge 1: Rising edge
+    INT1IE = 1;
+
+    // INT2 VI enable
+    // COSMAC MWR(RA0) Falling edge
+    INT2PPS = 0x0; //RA0->INTERRUPT MANAGER:INT2; for EMU1802mini
+    INT2EDG = 0; // 0: Falling edge 1: Rising edge
+    INT2IE = 1;
+
     // COSMAC start
     GIE = 1; // Global interrupt enable
     LATA1 = 1; // Release reset COSMAC ~CLEAR(RA1) for mini
