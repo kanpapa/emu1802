@@ -1,0 +1,44 @@
+0000-                  2                .TF     uart_echo.bin,BIN
+0000-                  3        *
+0000-                  4        * ECHO BACK
+0000-                  5        * TARGET: CDP1802 ON EMU1802
+0000-                  6        * SB-Assembler
+0000-                  7        *
+0000-                  8                .CR     1802    ;To load the 1802 cross overlay
+0000-                  9                .OR     $0000
+0000-                 10
+E000-                 11        UARTDR  .EQ     0E000H          ;DATA REG
+E001-                 12        UARTCR  .EQ     0E001H          ;CONTROL REG
+0000-                 13
+0000-                 14        * Register
+0000-                 15        R0      .EQ     0
+0001-                 16        R1      .EQ     1
+0002-                 17        R2      .EQ     2
+0003-                 18        R3      .EQ     3
+0004-                 19        R4      .EQ     4
+0000-                 20
+0000-                 21        *
+0000-                 22        * ECHO BACK PROGRAM for EMU1802
+0000-                 23        *
+0000-F8 E0            24 (   2) ECHO:   LDI     /UARTDR
+0002-B2               25 (   2)         PHI     R2
+0003-B3               26 (   2)         PHI     R3
+0004-F8 00            27 (   2)         LDI     #UARTDR         ;R2 <- UART DATA REG
+0006-A2               28 (   2)         PLO     R2
+0007-F8 01            29 (   2)         LDI     #UARTCR         ;R3 <- UART CONTROL REG
+0009-A3               30 (   2)         PLO     R3
+000A-                 31
+000A-03               32 (   2) GETCH:  LDN     R3              ;LD A,(UARTCR)  ;READ STATUS
+000B-FA 01            33 (   2)         ANI     $01             ;BIT 0,A        ;CHECK RX FLAG
+000D-32 0A            34 (   2)         BZ      GETCH           ;JR Z,GETCH     ;IF 0, REPEAT
+000F-02               35 (   2)         LDN     R2              ;LD A,(UARTDR)  ;GET CHAR
+0010-A4               36 (   2)         PLO     R4              ;               ;SAVE CHAR DATA
+0011-                 37
+0011-03               38 (   2) PUTCH:  LDN     R3              ;LD A,(UARTCR)  ;READ STATUS
+0012-FA 02            39 (   2)         ANI     $02             ;BIT 1,A        ;CHECK TX FLAG
+0014-32 11            40 (   2)         BZ      PUTCH           ;JR Z,PUTCH     ;IF 0, REPEAT
+0016-84               41 (   2)         GLO     R4              ;               ;LOAD CHAR DATA
+0017-52               42 (   2)         STR     R2              ;LD (UARTDR),A  ;TX CHAR
+0018-30 0A            43 (   2)         BR      GETCH
+001A-                 44
+001A-                 45                .EN
