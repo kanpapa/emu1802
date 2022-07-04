@@ -1,0 +1,64 @@
+0000-                  2                .TF     uart_echo.bin,BIN
+0000-                  3        *
+0000-                  4        * HELLO, WORLD AND ECHO BACK
+0000-                  5        * TARGET: CDP1802 ON EMU1802
+0000-                  6        *
+0000-                  7        * SB-Assembler
+0000-                  8        *
+0000-                  9                .CR     1802    ;To load the 1802 cross overlay
+0000-                 10                .OR     $0000
+0000-                 11
+E000-                 12        UARTDR  .EQ     0E000H          ;DATA REG
+E001-                 13        UARTCR  .EQ     0E001H          ;CONTROL REG
+0000-                 14
+0000-                 15        * Register
+0000-                 16        R0      .EQ     0
+0001-                 17        R1      .EQ     1
+0002-                 18        R2      .EQ     2
+0003-                 19        R3      .EQ     3
+0004-                 20        R4      .EQ     4
+0000-                 21
+0000-                 22        *
+0000-                 23        * MAIN ROUTINE
+0000-                 24        *
+0000-F8 00            25 (   2) START:  LDI     /MSG            ;R1 <- HELLO MSG
+0002-B1               26 (   2)         PHI     R1
+0003-F8 2C            27 (   2)         LDI     #MSG
+0005-A1               28 (   2)         PLO     R1
+0006-E1               29 (   2)         SEX     R1              ;X <- 1
+0007-                 30
+0007-F8 E0            31 (   2)         LDI     /UARTDR
+0009-B2               32 (   2)         PHI     R2
+000A-B3               33 (   2)         PHI     R3
+000B-F8 00            34 (   2)         LDI     #UARTDR         ;R2 <- UART DATA REG
+000D-A2               35 (   2)         PLO     R2
+000E-F8 01            36 (   2)         LDI     #UARTCR         ;R3 <- UART CONTROL REG
+0010-A3               37 (   2)         PLO     R3
+0011-                 38
+0011-03               39 (   2) HELLO:  LDN     R3              ;READ STATUS
+0012-FA 02            40 (   2)         ANI     $02             ;CHECK TX FLAG
+0014-32 11            41 (   2)         BZ      HELLO           ;IF 0, REPEAT
+0016-72               42 (   2)         LDXA                    ;LOAD MSG DATA
+0017-32 1C            43 (   2)         BZ      GETCH           ;END OF MSG?
+0019-52               44 (   2)         STR     R2              ;TX CHAR
+001A-30 11            45 (   2)         BR      HELLO           ;NEXT CHAR LOOP
+001C-                 46
+001C-03               47 (   2) GETCH:  LDN     R3              ;READ STATUS
+001D-FA 01            48 (   2)         ANI     $01             ;CHECK RX FLAG
+001F-32 1C            49 (   2)         BZ      GETCH           ;IF 0, REPEAT
+0021-02               50 (   2)         LDN     R2              ;GET CHAR
+0022-A4               51 (   2)         PLO     R4              ;SAVE CHAR DATA
+0023-                 52
+0023-03               53 (   2) PUTCH:  LDN     R3              ;READ STATUS
+0024-FA 02            54 (   2)         ANI     $02             ;CHECK TX FLAG
+0026-32 23            55 (   2)         BZ      PUTCH           ;IF 0, REPEAT
+0028-84               56 (   2)         GLO     R4              ;LOAD CHAR DATA
+0029-52               57 (   2)         STR     R2              ;TX CHAR
+002A-30 1C            58 (   2)         BR      GETCH
+002C-                 59
+002C-48 45 4C 4C 
+     4F 20 57 4F 
+     52 4C 44 0D 
+     0A 00            60        MSG:    .DB     'HELLO WORLD',$0D,$0A,0
+003A-                 61
+003A-                 62                .EN
