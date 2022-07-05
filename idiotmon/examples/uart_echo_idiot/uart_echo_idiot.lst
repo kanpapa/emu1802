@@ -1,0 +1,75 @@
+0000-                  2                .TF     uart_echo_idiot.hex,HEX
+0000-                  3        *
+0000-                  4        * HELLO, WORLD AND ECHO BACK for IDIOT monitor
+0000-                  5        * TARGET: CDP1802 ON EMU1802
+0000-                  6        *
+0000-                  7        * SB-Assembler
+0000-                  8        *
+0000-                  9                .CR     1802    ;To load the 1802 cross overlay
+8000-                 10                .OR     $8000
+8000-                 11
+E000-                 12        UARTDR  .EQ     0E000H          ;DATA REG
+E001-                 13        UARTCR  .EQ     0E001H          ;CONTROL REG
+8000-                 14
+8000-                 15        * Register
+0000-                 16        R0      .EQ     0
+0001-                 17        R1      .EQ     1
+0002-                 18        R2      .EQ     2
+0003-                 19        R3      .EQ     3
+0004-                 20        R4      .EQ     4
+0005-                 21        R5      .EQ     5
+0006-                 22        R6      .EQ     6
+0007-                 23        R7      .EQ     7
+0008-                 24        R8      .EQ     8
+0009-                 25        R9      .EQ     9
+000A-                 26        RA      .EQ     10
+000B-                 27        RB      .EQ     11
+000C-                 28        RC      .EQ     12
+000D-                 29        RD      .EQ     13
+000E-                 30        RE      .EQ     14
+000F-                 31        RF      .EQ     15
+8000-                 32
+8000-                 33        *
+8000-                 34        * MAIN ROUTINE
+8000-                 35        *
+8000-F8 80            36 (   2) START:  LDI     /MSG            ;R1 <- HELLO MSG
+8002-B1               37 (   2)         PHI     R1
+8003-F8 2C            38 (   2)         LDI     #MSG
+8005-A1               39 (   2)         PLO     R1
+8006-E1               40 (   2)         SEX     R1              ;X <- 1
+8007-                 41
+8007-F8 E0            42 (   2)         LDI     /UARTDR
+8009-B2               43 (   2)         PHI     R2
+800A-B3               44 (   2)         PHI     R3
+800B-F8 00            45 (   2)         LDI     #UARTDR         ;R2 <- UART DATA REG
+800D-A2               46 (   2)         PLO     R2
+800E-F8 01            47 (   2)         LDI     #UARTCR         ;R3 <- UART CONTROL REG
+8010-A3               48 (   2)         PLO     R3
+8011-                 49
+8011-03               50 (   2) HELLO:  LDN     R3              ;READ STATUS
+8012-FA 02            51 (   2)         ANI     $02             ;CHECK TX FLAG
+8014-32 11            52 (   2)         BZ      HELLO           ;IF 0, REPEAT
+8016-72               53 (   2)         LDXA                    ;LOAD MSG DATA
+8017-32 1C            54 (   2)         BZ      GETCH           ;END OF MSG?
+8019-52               55 (   2)         STR     R2              ;TX CHAR
+801A-30 11            56 (   2)         BR      HELLO           ;NEXT CHAR LOOP
+801C-                 57
+801C-03               58 (   2) GETCH:  LDN     R3              ;READ STATUS
+801D-FA 01            59 (   2)         ANI     $01             ;CHECK RX FLAG
+801F-32 1C            60 (   2)         BZ      GETCH           ;IF 0, REPEAT
+8021-02               61 (   2)         LDN     R2              ;GET CHAR
+8022-A4               62 (   2)         PLO     R4              ;SAVE CHAR DATA
+8023-                 63
+8023-03               64 (   2) PUTCH:  LDN     R3              ;READ STATUS
+8024-FA 02            65 (   2)         ANI     $02             ;CHECK TX FLAG
+8026-32 23            66 (   2)         BZ      PUTCH           ;IF 0, REPEAT
+8028-84               67 (   2)         GLO     R4              ;LOAD CHAR DATA
+8029-52               68 (   2)         STR     R2              ;TX CHAR
+802A-30 1C            69 (   2)         BR      GETCH
+802C-                 70
+802C-48 45 4C 4C 
+     4F 20 57 4F 
+     52 4C 44 0D 
+     0A 00            71        MSG:    .DB     'HELLO WORLD',$0D,$0A,0
+803A-                 72
+803A-                 73                .EN
