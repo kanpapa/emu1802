@@ -1,0 +1,1004 @@
+0000-                  2                .TF     idiot_uart.bin,BIN
+0000-                  3
+0000-                  4        ;-------------------------------------------------------------;
+0000-                  5        ; IDIOT/4 MONITOR FOR THE 1802   WRITTEN: 6/23/82 BY LEE HART ;
+0000-                  6        ; COPYRIGHT 1982-85 BY TMSI     LAST MOD: 3/28/86 BY LEE HART ;
+0000-                  7        ;                                                             ;
+0000-                  8        ; This program may be used for any noncommercial use free of  ;
+0000-                  9        ; charge. Contact information: Lee A. Hart, 814 8th Ave N,    ;
+0000-                 10        ; Sartell MN 56377, email <leeahart@earthlink.net>            ;
+0000-                 11        ;-------------------------------------------------------------;
+0000-                 12        ;
+0000-                 13        ;fixes by Herb Johnson HRJ April 2010, Jan 2014
+0000-                 14        ; changed "DC" to "DB"
+0000-                 15        ; ORGed to 8000H for 1802 Membership Card
+0000-                 16        ; changed other ORG [value] to RESET+[value]
+0000-                 17        ;operating notes
+0000-                 18        ;  EF4 is serial in (BN4), Q is serial out
+0000-                 19        ;  (M/S card uses EF4 for IN toggle, change to EF3 - BN3&B3 instructions)
+0000-                 20        ;  OUT 7 "turn reader on" bit 7 "off" bit 6
+0000-                 21        ;
+0000-                 22        ;fixes for Feb 2014 - RS-232 interface inverts serial input and output
+0000-                 23        ;so EF3 and Q need to be active LOW
+0000-                 24        ;will make IF EFHI....ELSE ....ENDI statements
+0000-                 25        ; and      IF QHI....ELSE...ENDI
+0000-                 26        EFHI    .EQ     0       ; 0=active low EF for serial
+0000-                 27        QHI     .EQ     0       ; 0=active low Q for serial
+0000-                 28        ;
+0000-                 29        ; register equivalents for A18
+0000-                 30        R0              .EQ     0
+0001-                 31        R1              .EQ     1
+0002-                 32        R2              .EQ     2
+0003-                 33        R3              .EQ     3
+0004-                 34        R4              .EQ     4
+0005-                 35        R5              .EQ     5
+0006-                 36        R6              .EQ     6
+0007-                 37        R7              .EQ     7
+0008-                 38        R8              .EQ     8
+0009-                 39        R9              .EQ     9
+000A-                 40        RA              .EQ     10
+000B-                 41        RB              .EQ     11
+000C-                 42        RC              .EQ     12
+000D-                 43        RD              .EQ     13
+000E-                 44        RE              .EQ     14
+000F-                 45        RF              .EQ     15
+0000-                 46        ;
+0000-                 47        ;
+0000-                 48        ; REGISTER ASSIGNMENTS:
+0000-                 49        ;
+0000-                 50        ;               1 - INTERRUPT PROGRAM COUNTER (FOR BREAKPOINTS)
+0000-                 51        ;               2 - STACK POINTER
+0000-                 52        ;               3 - NORMAL PROGRAM COUNTER
+0000-                 53        ;               4 - MONITOR: RAM PAGE0 POINTER
+0000-                 54        ;                   BASIC:   SCRT "CALL" PC
+0000-                 55        ;               5 - MONITOR: MAIN PC
+0000-                 56        ;                   BASIC:   SCRT "RETURN" PC
+0000-                 57        ;               6 - UART REGISTER ADDRESS
+0000-                 58        ;               8 - MONITOR: ?M VS. !M SWITCH
+0000-                 59        ;              10 - MONITOR: MEMORY POINTER
+000C-                 60        DELAY   .EQ    12 ; PC FOR DELAY SUBROUTINE
+000D-                 61        HEXX    .EQ    13 ; MONITOR: HEX ADDRESS ACCUMULATOR
+000E-                 62        BAUD    .EQ    14 ; RE.1=BAUD RATE CONSTANT
+0000-                 63        ;                   RE.0=USED FOR READ, TYPE
+000F-                 64        ASCII   .EQ    15 ; RF.1=ASCII I/O CHARACTER
+0000-                 65        ;                   RF.0=USED FOR READ, TYPE
+0000-                 66        ;
+0000-                 67        ; .EQATES
+0000-                 68        ;
+00D3-                 69        TYPA    .EQ     0D3H            ; TYPE CHARACTER MACRO
+0000-                 70        ;
+0000-                 71        ;       I/O
+0000-                 72        ;
+0000-                 73        ;UCTRL  .EQ     $03                     ; UART CTRL/STATUS REGISTER
+0000-                 74        ;UDATA  .EQ     $02                     ; UART DATA REGISTER
+0000-                 75        ;GSEL   .EQ     $07                     ; SYSTEM I/O GROUP SELECT REGISTER (ADDED HARDWARE)
+0000-                 76        ;UGRP   .EQ     $01                     ; I/O GROUP CONTAINING THE UART
+0000-                 77        ;
+0000-                 78        ; UART
+0000-                 79        ;
+E000-                 80        UARTDR  .EQ     0E000H          ;DATA REG
+E001-                 81        UARTCR  .EQ     0E001H          ;CONTROL REG
+0000-                 82        ;
+0000-                 83                .CR     1802
+0000-                 84        ;       .OR     8000H           ;HRJ for Membership Card
+0000-                 85                .OR     0000H           ;HRJ for Membership Card
+0000-71               86 (   2) RESET   DIS                     ; DISABLE INTERRUPTS
+0001-00               87                .DB     0
+0002-F8 FF            88 (   2) FINDRAM LDI     0FFH            ; FIND RAM, STARTING AT FFFF
+0004-B4               89 (   2)         PHI     R4
+0005-F8 FF            90 (   2) TRYAGAIN LDI    0FFH            ; REPEAT...
+0007-A4               91 (   2)         PLO     R4              ; - TEST TOP BYTE ON PAGE
+0008-54               92 (   2)         STR     R4              ; - STORE 'FF'
+0009-04               93 (   2)         LDN     R4              ;   READ IT BACK,
+000A-FB FF            94 (   2)         XRI     0FFH            ;   COMPARE
+000C-C6               95 (   3)         LSNZ                    ; - IF OK, STORE ALL 0'S,
+000D-54               96 (   2)         STR     R4              ;   READ BACK,
+000E-04               97 (   2)         LDN     R4              ;   COMPARE
+000F-32 1A            98 (   2)         BZ      RAMFOUND        ; - IF OK, THEN RAM FOUND
+0011-94               99 (   2)         GHI     R4              ; - IF NO MORE PAGES TO TEST,
+0012-32 E3           100 (   2)         BZ      NORAM           ;      THEN GO TO NORAM
+0014-A4              101 (   2)         PLO     R4              ;      ELSE DEC. PAGE NUMBER
+0015-24              102 (   2)         DEC     R4
+0016-84              103 (   2)         GLO     R4
+0017-B4              104 (   2)         PHI     R4              ; ...UNTIL DONE
+0018-30 05           105 (   2)         BR      TRYAGAIN
+001A-F8 DF           106 (   2) RAMFOUND LDI    0DFH            ; RAM FOUND:
+001C-A4              107 (   2)         PLO     R4              ; SAVE CPU REGISTERS
+001D-E4              108 (   2)         SEX     R4
+001E-                109        ;
+001E-                110        ; SAVE REGISTERS:  SAVES A COPY OF ALL CPU REGISTERS & I/O BITS
+001E-                111        ;       IN RAM. MUST BE ENTERED WITH P=R0 OR R1, X=R4.  SAVES
+001E-                112        ;       ALL REGISTERS CORRECTLY EXCEPT P, X, D, R(P), AND R4.
+001E-                113        ;
+001E-8F              114 (   2) SAVER   GLO     RF              ; SAVE REGISTERS R0-RF IN RAM
+001F-73              115 (   2)         STXD
+0020-9F              116 (   2)         GHI     RF              ; RF 1ST, R0 LAST,
+0021-73              117 (   2)         STXD                    ; WITH HI BYTE IN LOWER ADDRESS
+0022-8E              118 (   2)         GLO     RE
+0023-73              119 (   2)         STXD
+0024-9E              120 (   2)         GHI     RE
+0025-73              121 (   2)         STXD                    ; THE REGISTERS BEING USED FOR PROGRAM
+0026-8D              122 (   2)         GLO     RD              ; COUNTER AND RAM POINTER ARE CHANGING
+0027-73              123 (   2)         STXD                    ; DURING EXECUTION, SO THEIR STORED VALUES
+0028-9D              124 (   2)         GHI     RD              ; WILL BE FIXED LATER.
+0029-73              125 (   2)         STXD
+002A-8C              126 (   2)         GLO     RC
+002B-73              127 (   2)         STXD
+002C-9C              128 (   2)         GHI     RC
+002D-73              129 (   2)         STXD
+002E-8B              130 (   2)         GLO     RB
+002F-73              131 (   2)         STXD
+0030-9B              132 (   2)         GHI     RB
+0031-73              133 (   2)         STXD
+0032-8A              134 (   2)         GLO     RA
+0033-73              135 (   2)         STXD
+0034-9A              136 (   2)         GHI     RA
+0035-73              137 (   2)         STXD
+0036-89              138 (   2)         GLO     R9
+0037-73              139 (   2)         STXD
+0038-99              140 (   2)         GHI     R9
+0039-73              141 (   2)         STXD
+003A-88              142 (   2)         GLO     R8
+003B-73              143 (   2)         STXD
+003C-98              144 (   2)         GHI     R8
+003D-73              145 (   2)         STXD
+003E-87              146 (   2)         GLO     R7
+003F-73              147 (   2)         STXD
+0040-97              148 (   2)         GHI     R7
+0041-73              149 (   2)         STXD
+0042-86              150 (   2)         GLO     R6
+0043-73              151 (   2)         STXD
+0044-96              152 (   2)         GHI     R6
+0045-73              153 (   2)         STXD
+0046-85              154 (   2)         GLO     R5
+0047-73              155 (   2)         STXD
+0048-95              156 (   2)         GHI     R5
+0049-73              157 (   2)         STXD
+004A-73              158 (   2)         STXD                    ; DON'T BOTHER TO SAVE R4 (SAVES 2 BYTES)
+004B-73              159 (   2)         STXD
+004C-83              160 (   2)         GLO     R3
+004D-73              161 (   2)         STXD
+004E-93              162 (   2)         GHI     R3
+004F-73              163 (   2)         STXD
+0050-82              164 (   2)         GLO     R2
+0051-73              165 (   2)         STXD
+0052-92              166 (   2)         GHI     R2
+0053-73              167 (   2)         STXD
+0054-81              168 (   2)         GLO     R1
+0055-73              169 (   2)         STXD
+0056-91              170 (   2)         GHI     R1
+0057-73              171 (   2)         STXD
+0058-80              172 (   2)         GLO     R0
+0059-73              173 (   2)         STXD
+005A-90              174 (   2)         GHI     R0
+005B-73              175 (   2)         STXD
+005C-F8 00           176 (   2)         LDI     0               ; LOAD 0 (& SAVE A COPY FOR LATER)
+005E-B3              177 (   2)         PHI     R3
+005F-3F 63           178 (   2)         BN4     $+4             ; PACK STATUS OF EF4 & EF3 INTO 1 BYTE
+0061-F9 04           179 (   2)         ORI     004H            ; AND PUSH INTO RAM
+0063-3E 67           180 (   2)         BN3     $+4             ;   X4 - EF4 ACTIVE
+0065-F9 30           181 (   2)         ORI     030H            ;   3X - EF3 ACTIVE
+0067-73              182 (   2)         STXD
+0068-93              183 (   2)         GHI     R3              ; PACK STATUS OF EF2 & EF1 INTO 1 BYTE
+0069-3D 6D           184 (   2)         BN2     $+4             ; AND PUSH INTO RAM
+006B-F9 02           185 (   2)         ORI     002H            ;   X2 - EF2 ACTIVE
+006D-3C 71           186 (   2)         BN1     $+4             ;   1X - EF1 ACTIVE
+006F-F9 10           187 (   2)         ORI     010H
+0071-73              188 (   2)         STXD
+0072-93              189 (   2)         GHI     R3              ; PUSH STATUS OF Q INTO RAM
+0073-C5              190 (   3)         LSNQ                    ;   1 - Q ACTIVE
+0074-F9 01           191 (   2)         ORI     1               ;   0 - Q INACTIVE
+0076-73              192 (   2)         STXD
+0077-F8 01           193 (   2)         LDI     1               ; PUSH STATUS OF IE INTO RAM
+0079-CC              194 (   3)         LSIE                    ;   1 - ENABLED
+007A-F8 00           195 (   2)         LDI     0               ;   0 - DISABLED
+007C-73              196 (   2)         STXD
+007D-93              197 (   2)         GHI     R3              ; PUSH D(=0) TO RAM (DUMMY VALUE)
+007E-73              198 (   2)         STXD
+007F-7C 00           199 (   2)         ADCI    0               ; PUSH DF INTO RAM
+0081-73              200 (   2)         STXD
+0082-78              201 (   2)         SAV                     ; PUSH T INTO RAM
+0083-24              202 (   2)         DEC     R4
+0084-F8 CB           203 (   2)         LDI     #IFINT  ; IF CALLED VIA INTERRUPT, RETURN
+0086-A1              204 (   2)         PLO     R1
+0087-90              205 (   2)         GHI     R0              ; ELSE CALLED VIA RESET,
+0088-B1              206 (   2)         PHI     R1              ;      SET RP=R1
+0089-F8 8D           207 (   2)         LDI     #$+4
+008B-A1              208 (   2)         PLO     R1
+008C-D1              209 (   2)         SEP     R1
+008D-F8 00           210 (   2)         LDI     0               ; PUSH STATUS=0
+008F-54              211 (   2)         STR     R4
+0090-                212        ;
+0090-F8 CA           213 (   2) CONTINIT LDI    #CHANGE ; COPY CODE THAT CHANGES TO THE DESIRED PC
+0092-A5              214 (   2)         PLO     R5              ; FOR A $R COMMAND. THE CODE GOES TO 35 BYTES
+0093-91              215 (   2)         GHI     R1              ; BEFORE "SAVEREG" MEMORY
+0094-FC 03           216 (   2)         ADI     3
+0096-B5              217 (   2)         PHI     R5
+0097-F8 A0           218 (   2)         LDI     0A0H
+0099-A4              219 (   2)         PLO     R4
+009A-F8 18           220 (   2)         LDI     24
+009C-A3              221 (   2)         PLO     R3
+009D-45              222 (   2) INITLOOP LDA    R5              ; LOOP AND MOVE THE BYTES
+009E-54              223 (   2)         STR     R4
+009F-14              224 (   2)         INC     R4
+00A0-23              225 (   2)         DEC     R3              ; R4 WILL END UP POINTING TO XXB8
+00A1-83              226 (   2)         GLO     R3
+00A2-3A 9D           227 (   2)         BNZ     INITLOOP
+00A4-94              228 (   2)         GHI     R4              ; INITIALIZE R2 (STACK POINTER)
+00A5-B2              229 (   2)         PHI     R2
+00A6-F8 C3           230 (   2)         LDI     0C3H            ; CORRECT STORED VALUE OF R1
+00A8-A4              231 (   2)         PLO     R4
+00A9-F8 C1           232 (   2)         LDI     #INTERUPT
+00AB-73              233 (   2)         STXD
+00AC-91              234 (   2)         GHI     R1
+00AD-73              235 (   2)         STXD
+00AE-91              236 (   2)         GHI     R1              ; LOAD R5 WITH ADDRESS OF "ENTRY"
+00AF-FC 01           237 (   2)         ADI     1
+00B1-B5              238 (   2)         PHI     R5
+00B2-F8 F8           239 (   2)         LDI     #ENTRY
+00B4-A5              240 (   2)         PLO     R5
+00B5-F8 FE           241 (   2)         LDI     0FEH            ; POINT R3 TO TIMALC
+00B7-A3              242 (   2)         PLO     R3
+00B8-91              243 (   2)         GHI     R1
+00B9-B3              244 (   2)         PHI     R3              ; CALL TIMALC; IT RETURNS WITH "SEP R5",
+00BA-                245        ;       SEP     R3              ; SO IT WILL RETURN TO "ENTRY"
+00BA-F8 E0           246 (   2)         LDI     $E0             ; R6 <- UART REGISTER ADDRESS $E000
+00BC-B6              247 (   2)         PHI     R6
+00BD-F8 00           248 (   2)         LDI     0
+00BF-A6              249 (   2)         PLO     R6
+00C0-D5              250 (   2)         SEP     R5              ; Straight to Monitor
+00C1-                251        ;
+00C1-                252        ; INTERUPT:  INTERRUPT HANDLER FOR IDIOT MONITOR. HARDWARE INTERRUPT
+00C1-                253        ;       SAVES ALL REGISTERS EXCEPT T CORRECTLY. A SOFTWARE INTERRUPT
+00C1-                254        ;       (D1=SEP R1) SAVES ALL BUT P AND X CORRECTLY. R2 MUST POINT TO
+00C1-                255        ;       A STACK WITH AT LEAST 4 FREE BYTES TO SAVE D AND R4 CORRECTLY.
+00C1-                256        ;
+00C1-E2              257 (   2) INTERUPT SEX    R2              ; ENTRY: OLD P AND X DESTROYED
+00C2-22              258 (   2)         DEC     R2              ; DEC. STACK POINTER TO FREE LOCATION
+00C3-73              259 (   2)         STXD                    ; PUSH D
+00C4-94              260 (   2)         GHI     R4              ; PUSH R4
+00C5-73              261 (   2)         STXD
+00C6-84              262 (   2)         GLO     R4
+00C7-52              263 (   2)         STR     R2
+00C8-E4              264 (   2)         SEX     R4              ; SET X=R4 AND GO TO SAVE REGISTERS
+00C9-30 02           265 (   2)         BR      FINDRAM
+00CB-F8 10           266 (   2) IFINT   LDI     010H            ; RETURN HERE:
+00CD-73              267 (   2)         STXD                    ; PUSH STATUS=10
+00CE-F8 C9           268 (   2)         LDI     0C9H            ; CORRECT STORED CONTENTS OF R4
+00D0-A4              269 (   2)         PLO     R4
+00D1-42              270 (   2)         LDA     R2
+00D2-73              271 (   2)         STXD
+00D3-42              272 (   2)         LDA     R2
+00D4-73              273 (   2)         STXD
+00D5-F8 BB           274 (   2)         LDI     0BBH            ; CORRECT STORED CONTENTS OF D
+00D7-A4              275 (   2)         PLO     R4
+00D8-42              276 (   2)         LDA     R2
+00D9-54              277 (   2)         STR     R4
+00DA-F8 C5           278 (   2)         LDI     0C5H            ; CORRECT STORED VALUE OF STACK POINTER
+00DC-A4              279 (   2)         PLO     R4              ; TO ACTUAL VALUE AT TIME OF INTERRUPT
+00DD-82              280 (   2)         GLO     R2
+00DE-73              281 (   2)         STXD
+00DF-92              282 (   2)         GHI     R2
+00E0-73              283 (   2)         STXD
+00E1-30 90           284 (   2)         BR      CONTINIT        ; GO CONTINUE INITIALIZATION
+00E3-                285        ;
+00E3-90              286 (   2) NORAM   GHI     R0              ; NO RAM: CAN'T SAVE REGISTERS
+00E4-FC 01           287 (   2)         ADI     1
+00E6-B3              288 (   2)         PHI     R3
+00E7-F8 F8           289 (   2)         LDI     #ENTRY  ; CHANGE PROGRAM COUNTER TO R3
+00E9-A3              290 (   2)         PLO     R3
+00EA-E2              291 (   2)         SEX     R2              ; STACK POINTER TO R2
+00EB-D3              292 (   2)         SEP     R3              ; GO TO IDIOT/2
+00EC-                293        ;
+00EC-                294        ; READ: READS A SERIAL CHARACTER VIA EF4 AND RETURNS WITH ITS ASCII CODE IN
+00EC-                295        ;       ASCII.1 AND D (BUT D WILL BE LOST IF SCRT CALL & RETURN IS USED).
+00EC-                296        ;       EXPECTS P=3; ALTERS DF, ASCII, & BAUD.0; AND RETURNS WITH SEP R5.
+00EC-                297        ;
+00EC-                298        ; TTYRED:  SAME AS "READ", BUT FIRST DOES AN "OUT 7" X'80' TO TURN ON
+00EC-                299        ;       A SERIAL INPUT DEVICE SUCH AS A TAPE RECORDER. ONCE A CHARACTER HAS
+00EC-                300        ;       STARTED, AN "OUT 7" X'40' IS USED TO TURN IT OFF AGAIN.
+00EC-                301        ;
+00EC-                302        ; READAH:  SAME AS "READ", BUT IF A HEX CHARACTER (0-9, A-F), IT IS ALSO
+00EC-                303        ;       SHIFTED INTO THE LOW 4 BITS OF "HEXX" & DF=1 IS RETURNED; IF NOT
+00EC-                304        ;       HEX, RETURNS DF=0, "READAH" USES P=R3, ALTERS D, DF, RF, RE.0, &
+00EC-                305        ;       RETURNS WITH A "SEP R5" AND R3 POINTING TO "READAH" ENTRY POINT.
+00EC-                306        ;
+00EC-                307        ; NOTE:  THE READ ROUTINES EXIT AT THE BEGINNING OF THE ECHOED STOP BIT,
+00EC-                308        ;       & SET BAUD.0 (RE.0) >0 AS A DELAY FLAG FOR THE "TYPE" ROUTINES. THE
+00EC-                309        ;       "TYPE" ROUTINES CHECK THIS FLAG BEFORE TYPING THE NEXT BYTE, & IF
+00EC-                310        ;       SET, WILL FIRST SEND 2 STOP BITS. TAKE CARE NOT TO RESET THIS FLAG
+00EC-                311        ;       (BY USING THE DELAY ROUTINE OR RE.0) UNTIL ENOUGH TIME HAS PASSED
+00EC-                312        ;       SO NO FURTHER DELAY IS NEEDED.
+00EC-                313        ;
+012F                314                .NO     RESET+012FH ;HRJ offset
+012F-FC 07           315 (   2) CKDEC   ADI     7               ; IF CHARACTER IS 0-9 OR A-F,
+0131-33 37           316 (   2)         BDF     NFND
+0133-FC 0A           317 (   2)         ADI     00AH            ;    THEN SHIFT IT IN
+0135-33 88           318 (   2)         BDF     FND             ;    ELSE IS NON-HEX,
+0137-FC 00           319 (   2) NFND    ADI     0               ;       SET DF=0
+0139-9F              320 (   2) REXIT   GHI     ASCII           ; PUT CHARACTER IN D
+013A-D5              321 (   2)         SEP     R5              ; RETURN WITH ENTRY FLAG SET:
+013B-F8 80           322 (   2) READAH  LDI     080H            ;   =80 IF VIA READAH
+013D-38              323 (   2)         SKP
+013E-83              324 (   2) READ    GLO     R3              ;   =3F IF VIA READ
+013F-C8              325 (   3)         LSKP
+0140-F8 00           326 (   2) TTYRED  LDI     0               ;   =00 IF VIA TTYRED
+0142-AF              327 (   2)         PLO     ASCII           ; SAVE ENTRY FLAG
+0143-F8 80           328 (   2) READ2   LDI     080H            ; SET #BITS IN CHARACTER=7
+0145-BF              329 (   2)         PHI     ASCII           ; (TAKES 7 SHIFTS TO CHANGE '80' INTO '01')
+0146-E3              330 (   2)         SEX     R3
+0147-8F              331 (   2)         GLO     ASCII           ; GET ENTRY FLAG
+0148-                332        ;       LSNZ                    ; IF TTYRED,
+0148-                333        ;       OUT     7               ;    TURN READER ON
+0148-                334        ;       .DB     080H
+0148-                335        ;
+0148-                336        ;       UART INPUT CODE HERE
+0148-                337        ;
+0148-E2              338 (   2)         SEX     R2
+0149-16              339 (   2)         INC     R6              ; UARTC $E001
+014A-06              340 (   2) KEY1:   LDN     R6
+014B-F6              341 (   2)         SHR                     ; UART STATUS BYTE
+014C-3B 4A           342 (   2)         BNF     KEY1            ; WAIT 'TILL DATA AVAIL.
+014E-                343
+014E-26              344 (   2)         DEC     R6              ; UARTD $E000
+014F-06              345 (   2)         LDN     R6              ; GET DATA
+0150-52              346 (   2)         STR     R2
+0151-56              347 (   2)         STR     R6              ; ECHO
+0152-BF              348 (   2)         PHI     ASCII
+0153-30 79           349 (   2)         BR      BZ
+0155-                350
+0179                351                .NO             RESET+$0179
+0179-                352
+0179-32 43           353 (   2) BZ:     BZ      READ2           ; REPEAT IF 00=NULL
+017B-8F              354 (   2)         GLO     ASCII           ; IF READ OR TTYRED,
+017C-FE              355 (   2)         SHL                     ;    THEN GO TO EXIT
+017D-3B 39           356 (   2)         BNF     REXIT           ;    ELSE IS READAH:
+017F-9F              357 (   2)         GHI     ASCII           ; IF CHARACTER < "A",
+0180-FF 41           358 (   2)         SMI     041H            ;    THEN GO CHECK FOR A NUMBER (0-9)
+0182-3B 2F           359 (   2)         BNF     CKDEC
+0184-FF 06           360 (   2)         SMI     006H            ;    ELSE CHECK FOR LETTERS A-F
+0186-33 37           361 (   2)         BDF     NFND
+0188-FE              362 (   2) FND     SHL                     ; CHARACTER IS HEX:
+0189-FE              363 (   2)         SHL
+018A-FE              364 (   2)         SHL                     ;   SHIFT IT INTO THE LOWEST 4 BITS OF HEXX,
+018B-FE              365 (   2)         SHL                     ;   1 BIT AT A TIME
+018C-FC 08           366 (   2)         ADI     8
+018E-FE              367 (   2)         SHL
+018F-AE              368 (   2) FND1    PLO     BAUD            ; REPEAT FOUR TIMES...
+0190-8D              369 (   2)         GLO     HEXX            ; - SHIFT BIT INTO HEXX.0
+0191-7E              370 (   2)         SHLC
+0192-AD              371 (   2)         PLO     HEXX
+0193-9D              372 (   2)         GHI     HEXX            ; - SHIFT CARRY BIT INTO HEXX.1
+0194-7E              373 (   2)         SHLC
+0195-BD              374 (   2)         PHI     HEXX
+0196-8E              375 (   2)         GLO     BAUD            ; - GET NEXT BIT
+0197-FE              376 (   2)         SHL                     ; ...UNTIL DONE
+0198-3A 8F           377 (   2)         BNZ     FND1
+019A-30 39           378 (   2)         BR      REXIT           ; EXIT WITH DELAY FLAG SET
+019C-                379        ;
+019C-                380        ; TYPE5: TYPES THE BYTE AT THE MEMORY LOCATION POINTED TO BY R5, & THEN
+019C-                381        ;       INCREMENTS R5. IF DELAY FLAG IS SET (BAUD.0>1), "TYPE5" 1ST WAITS
+019C-                382        ;       2 BIT-TIMES SO ANY PREVIOUS READ OPERATIONS END, TYPES THE BYTE,
+019C-                383        ;       AND THEN RESETS THE DELAY FLAG=0 SO FURTHER TYPES ARE NOT DELAYED.
+019C-                384        ;
+019C-                385        ; TYPE6: SAME, BUT USES & INCREMENTS R6.
+019C-                386        ;
+019C-                387        ; TYPE:  SAME, BUT TYPES ASCII.1 (RF.1)
+019C-                388        ;
+019C-                389        ; TYPE5D: SAME AS "TYPE5", BUT ALWAYS WAITS 2 BIT-TIMES.
+019C-                390        ;
+019C-                391        ; TYPE2:  SAME AS "TYPE5", BUT TYPES THE CONTENTS OF ASCII.1 (RF.1)
+019C-                392        ;       AS TWO HEX DIGITS (0-9, A-F).
+019C-                393        ;
+019C-                394        ;       ALL TYPE ROUTINES USE P=R3, EXIT VIA "SEP R5", & CAN USE THE SCRT
+019C-                395        ;       CALL & RETURN.  THE SERIAL OUTPUT USES "Q",WITH 1 START, 8 DATA, &
+019C-                396        ;       2 STOP BITS. LINE FEEDS <LF> ARE FOLLOWED BY 3 NULLS (=0) IN CASE
+019C-                397        ;       THE TERMINAL NEEDS TIME FOR THE <CR><LF> SEQUENCE.  Q=0 IS "MARK"
+019C-                398        ;       OR STOP BIT; Q=1 IS A "SPACE" OR START BIT.  THE DELAY ROUTINE
+019C-                399        ;       DETERMINES THE BAUD RATE.  ALL "TYPE" ROUTINES ALTER D,DF,X,RD.0,
+019C-                400        ;       RE.0, RF.0, & EXIT WITH R3 AT "TYPE5".
+019C-                401        ;
+019C-                402        ;   BAUD.0 = DELAY FLAG: =0 NO DELAY
+019C-                403        ;                        >0 DELAY 2 BITS
+019C-                404        ;  ASCII.0 = (LO 4 BITS) #BITS/CHARACTER
+019C-                405        ;          = (HI 4 BITS) 0= BYTE OUTPUT
+019C-                406        ;                        1= 1ST HEX OUT
+019C-                407        ;                        2= LAST HEX OUT
+019C-                408        ;                        5= <LF> OUTPUT
+019C-                409                .NO     RESET+019CH             ;HRJ reset
+019C-9E              410 (   2) TYPE5D  GHI     BAUD            ; IF TYPE5D,
+019D-AE              411 (   2)         PLO     BAUD            ;    THEN SET DELAY FLAG TRUE (>0)
+019E-38              412 (   2)         SKP
+019F-D5              413 (   2) TYPEXIT SEP     R5
+01A0-45              414 (   2) TYPE5   LDA     R5              ; IF TYPE5, GET BYTE VIA R5, THEN INC. R5
+01A1-38              415 (   2)         SKP
+01A2-46              416 (   2) TYPE6   LDA     R6              ; IF TYPE6, GET BYTE VIA R6, THEN INC. R6
+01A3-38              417 (   2)         SKP
+01A4-9F              418 (   2) TYPE    GHI     ASCII           ; IF TYPE, GET BYTE IN ASCII.1
+01A5-AD              419 (   2)         PLO     RD
+01A6-                420        ;
+01A6-                421        ; DETERMINE CODE BYTE
+01A6-                422        ;
+01A6-FB 0A           423 (   2)         XRI     00AH            ; IF LINE FEED,
+01A8-3A BE           424 (   2)         BNZ     TY2             ;    THEN SET CODE=<LF>, 11 BITS
+01AA-F8 5B           425 (   2)         LDI     05BH
+01AC-30 C0           426 (   2)         BR      TY3
+01AE-9F              427 (   2) TYPE2   GHI     ASCII           ;       IF TYPE2,
+01AF-F6              428 (   2)         SHR                     ;          THEN GET ASCII.1
+01B0-F6              429 (   2)         SHR                     ;               EXTRACT UPPER 4 BITS
+01B1-F6              430 (   2)         SHR
+01B2-F6              431 (   2)         SHR
+01B3-FC F6           432 (   2)         ADI     0F6H            ;               CONVERT TO HEX:
+01B5-C7              433 (   3)         LSNF                    ;               IF "A" OR MORE, ADD 37
+01B6-FC 07           434 (   2)         ADI     7
+01B8-FF C6           435 (   2)         SMI     0C6H            ;                  ELSE ADD 30
+01BA-AD              436 (   2)         PLO     RD
+01BB-F8 1B           437 (   2)         LDI     01BH            ;               CODE=HEX, 11 BITS
+01BD-C8              438 (   3)         LSKP
+01BE-F8 0B           439 (   2) TY2     LDI     00BH            ;   ELSE SET CODE=BYTE, 11 BITS
+01C0-AF              440 (   2) TY3     PLO     ASCII           ;       SAVE CODE BYTE
+01C1-                441        ;
+01C1-                442        ; BEGIN SERIAL OUTPUT (DELAY + 44 MACHINE CYCLES PER LOOP)
+01C1-                443        ; NO DELAY ANYMORE, THE CODE CLOW DRIVES THE UART.
+01C1-                444        ;
+01C1-E2              445 (   2) BEGIN2  SEX     R2
+01C2-16              446 (   2)         INC     R6      ; $E001
+01C3-06              447 (   2) BEGIN3  LDN     R6      ; Check UART ready.
+01C4-F6              448 (   2)         SHR
+01C5-F6              449 (   2)         SHR
+01C6-3B C3           450 (   2)         BNF     BEGIN3
+01C8-                451        ;
+01C8-12              452 (   2) OUTPUT  INC     R2
+01C9-8D              453 (   2)         GLO     RD
+01CA-52              454 (   2)         STR     R2
+01CB-26              455 (   2)         DEC     R6      ; $E000
+01CC-56              456 (   2)         STR     R6      ; Send character from stack.
+01CD-22              457 (   2)         DEC     R2
+01CE-22              458 (   2)         DEC     R2
+01CF-8F              459 (   2)         GLO     ASCII
+01D0-FF 0B           460 (   2)         SMI     00BH
+01D2-AF              461 (   2)         PLO     ASCII
+01D3-30 DD           462 (   2)         BR      NXCHAR
+01D5-                463        ;
+01DD                464                .NO RESET+$01DD         ; CONTINUATION OF ORIGINAL CODE
+01DD-                465
+01DD-8F              466 (   2) NXCHAR  GLO     ASCII           ; GET CODE BYTE;
+01DE-FC FB           467 (   2)         ADI     0FBH            ; DECREMENT CODE,
+01E0-AF              468 (   2)         PLO     ASCII           ; SET #BITS=11
+01E1-3B 9F           469 (   2)         BNF     TYPEXIT         ; IF NO MORE, EXIT!
+01E3-                470        ;
+01E3-                471        ; TEST CODE BYTE TO SEE WHAT TO DO NEXT
+01E3-                472        ;
+01E3-FF 1B           473 (   2)         SMI     01BH            ; IF CODE=1,
+01E5-32 9F           474 (   2)         BZ      TYPEXIT         ;    THEN WAS LAST NULL: EXIT
+01E7-F8 00           475 (   2)         LDI     0               ; IF CODE>1,
+01E9-33 F5           476 (   2)         BDF     HX22            ;    THEN GET NULL & GO TYPE IT
+01EB-                477        ;                               ; IF CODE=0,
+01EB-9F              478 (   2) HEX2    GHI     ASCII           ;    GET BYTE
+01EC-FA 0F           479 (   2)         ANI     00FH            ;    MASK LOWER 4
+01EE-FC F6           480 (   2)         ADI     0F6H            ;    CONVERT TO HEX
+01F0-C7              481 (   3)         LSNF                    ;    IF "A" OR MORE,
+01F1-FC 07           482 (   2)         ADI     7               ;       THEN ADD 37
+01F3-FF C6           483 (   2)         SMI     0C6H            ;       ELSE ADD 30
+01F5-AD              484 (   2) HX22    PLO     RD              ;    LOAD BYTE
+01F6-30 C1           485 (   2)         BR      BEGIN2          ;    BEGIN TYPING IT
+01F8-                486        ;
+01F8-                487        ; "IDIOT" MONITOR:  UTILITY PROGRAM TO EXAMINE & CHANGE REGISTERS OR MEMORY,
+01F8-                488        ;       AND EXECUTE PROGRAMS WITH BREAKPOINTS. AN ASTERISK (*) INDICATES
+01F8-                489        ;       "IDIOT" IS READY FOR A COMMAND. ALL COMMANDS CONSIST OF PUNCTUATION
+01F8-                490        ;       (?!$) FOLLOWED BY A LETTER (M,P,R). ALL OTHER INPUTS ARE IGNORED.
+01F8-                491        ;       NUMBERS ARE HEXADECIMAL, AND LEADING ZEROS ARE UNNECESSARY. SPACES,
+01F8-                492        ;       LINE FEEDS, & CARRIAGE RETURNS CAN BE USED BETWEEN NUMBERS FOR
+01F8-                493        ;       READABILITY. THE COMMANDS ARE:
+01F8-                494        ;
+01F8-                495        ;  !M - CHANGE MEMORY
+01F8-                496        ;         EXAMPLE:  !MA00 11 22 33 <CR>
+01F8-                497        ;       WRITES HEX BYTES (11,22,33) INTO MEMORY, STARTING AT THE SPECIFIED
+01F8-                498        ;       ADDRESS (0A00).
+01F8-                499        ;
+01F8-                500        ;  ?M - EXAMINE MEMORY
+01F8-                501        ;         EXAMPLE:  ?MA00 3 <CR>
+01F8-                502        ;           TYPES:  0A00 1122 33 <CR>
+01F8-                503        ;       TYPE THE SPECIFIED ADDRESS (0A00) AND THE CONTENTS OF THE SPECIFIED
+01F8-                504        ;       NUMBER OF BYTES OF MEMORY (3). LONG LISTINGS CAN BE ABORTED BY
+01F8-                505        ;       TYPING A "BREAK".
+01F8-                506        ;
+01F8-                507        ;     - MOVE MEMORY
+01F8-                508        ;         EXAMPLE:  ?MA00 3 !M800 <CR>
+01F8-                509        ;       MOVES A SPECIFIED NUMBER OF BYTES IN MEMORY (3) FROM ONE ADDRESS
+01F8-                510        ;       (0A00) TO ANOTHER (0800).  THE BLOCKS CAN OVERLAP WITHOUT ERROR.
+01F8-                511        ;
+01F8-                512        ;  ?R - EXAMINE CPU REGISTERS
+01F8-                513        ;         EXAMPLE:  ?R <CR>
+01F8-                514        ;           TYPES:  10B8 ID T  DF D  IE Q  EF1234
+01F8-                515        ;                   10C0 R0 R1 R2 R3 R4 R5 R6 R7
+01F8-                516        ;                   10D0 R8 R9 RA RB RC RD RE RF
+01F8-                517        ;       TYPES CONTENTS OF CPU REGISTERS SAVED AFTER THE LAST INTERRUPT,
+01F8-                518        ;       BREAKPOINT, OR RESET. "10B8" ETC. IS THE ADDRESS IN RAM WHERE THIS
+01F8-                519        ;       DATA IS STORED. REGISTER CONTENTS CAN BE CHANGED WITH A !M COMMAND,
+01F8-                520        ;       AND RESTORED WITH A $R COMMAND.
+01F8-                521        ;
+01F8-                522        ;  $P - RUN PROGRAM
+01F8-                523        ;         EXAMPLE:  $PA00 <CR>
+01F8-                524        ;       BEGINS PROGRAM EXECUTION AT THE ADDRESS SPECIFIED (0A00) WITH
+01F8-                525        ;       P=X=R0 AND INTERRUPTS ENABLED.
+01F8-                526        ;
+01F8-                527        ;  $R - RUN REGISTERS
+01F8-                528        ;         EXAMPLE:  $R23 <CR>
+01F8-                529        ;       BEGINS PROGRAM EXECUTION WITH THE CPU REGISTERS SET TO THE CONTENTS
+01F8-                530        ;       OF RAM LOCATIONS 10BA-10EF, AND X & P SET TO THE SPECIFIED VALUES
+01F8-                531        ;       (X=2, P=3).
+01F8-                532        ;
+01F8-95              533 (   2) ENTRY   GHI     R5              ; SET A POINTER TO TYPE5D
+01F9-B3              534 (   2)         PHI     R3
+01FA-F8 9C           535 (   2)         LDI     #TYPE5D
+01FC-A3              536 (   2)         PLO     R3              ; TYPE "SIGNON" MESSAGE:
+01FD-D3 0D           537                .DB     TYPA,13         ; <CR>
+01FF-D3 0A           538                .DB     TYPA,10         ; <LF>
+0201-D3 49           539                .DB     TYPA,'I'        ; <I>
+0203-D3 44           540                .DB     TYPA,'D'        ; <D>
+0205-D3 49           541                .DB     TYPA,'I'        ; <I>
+0207-D3 4F           542                .DB     TYPA,'O'        ; <O>
+0209-D3 54           543                .DB     TYPA,'T'        ; <T>
+020B-D3 2F           544                .DB     TYPA,'/'        ; </>
+020D-D3 34           545                .DB     TYPA,'4'        ; <4>
+020F-95              546 (   2) RESTART GHI     R5
+0210-FF 01           547 (   2)         SMI     1
+0212-B3              548 (   2)         PHI     R3
+0213-F8 9C           549 (   2)         LDI     #TYPE5D
+0215-A3              550 (   2)         PLO     R3              ; TYPE "PROMPT" MESSAGE:
+0216-D3 0D           551                .DB     TYPA,13         ; <CR>
+0218-D3 0A           552                .DB     TYPA,10         ; <LF>
+021A-D3 2A           553                .DB     TYPA,'*'        ; <*>
+021C-F8 00           554 (   2) IGNORE  LDI     0
+021E-BD              555 (   2)         PHI     HEXX            ; SET HEXX=0
+021F-AD              556 (   2)         PLO     HEXX
+0220-F8 3B           557 (   2)         LDI     #READAH ; REPEAT...
+0222-A3              558 (   2)         PLO     R3
+0223-D3              559 (   2)         SEP     R3              ; - GET A KEY
+0224-FB 24           560 (   2)         XRI     '$'             ; - IF "$",
+0226-32 CC           561 (   2)         BZ      DOLLAR          ;       GO TO DOLLAR
+0228-FB 05           562 (   2)         XRI     005H            ; - IF "!",
+022A-A8              563 (   2)         PLO     R8              ;       SET SWITCH=0
+022B-CE              564 (   3)         LSZ                     ; - IF "?",
+022C-FB 1E           565 (   2)         XRI     01EH            ;       LEAVE SWITCH>0
+022E-3A 1C           566 (   2)         BNZ     IGNORE          ; ...UNTIL ONE FOUND
+0230-                567        ;
+0230-                568        ; GET ADDRESS FOR ?M, !M, OR ?R COMMAND
+0230-                569        ;
+0230-D3              570 (   2)         SEP     R3              ; GET NEXT KEY
+0231-FB 52           571 (   2)         XRI     'R'             ; IF "R",
+0233-3A 40           572 (   2)         BNZ     RDARGS
+0235-F8 B8           573 (   2)         LDI     0B8H            ;    SET ADDRESS TO SAVED REGISTERS
+0237-AA              574 (   2)         PLO     RA
+0238-92              575 (   2)         GHI     R2
+0239-BA              576 (   2)         PHI     RA
+023A-F8 28           577 (   2)         LDI     40              ;    SET #BYTES=40
+023C-AD              578 (   2)         PLO     HEXX
+023D-D3              579 (   2)         SEP     R3              ;    GET NEXT KEY
+023E-30 5C           580 (   2)         BR      RD3             ;    GO TYPE IT
+0240-FB 1F           581 (   2) RDARGS  XRI     01FH            ; IF "M",
+0242-3A 1C           582 (   2)         BNZ     IGNORE
+0244-D3              583 (   2) RD1     SEP     R3              ;    IGNORE LEADING NON-HEX CHARACTERS
+0245-3B 44           584 (   2)         BNF     $-1
+0247-D3              585 (   2)         SEP     R3              ;    ASSEMBLE HEX CHAR.INTO ADDRESS
+0248-33 47           586 (   2)         BDF     $-1
+024A-FB 20           587 (   2)         XRI     020H            ;    IF NEXT KEY NOT "SPACE",
+024C-3A C1           588 (   2)         BNZ     SYNERR          ;       GO TO SYNTAX ERROR
+024E-9D              589 (   2)         GHI     HEXX
+024F-BA              590 (   2)         PHI     RA              ;    LET ADDRESS POINTER=HEXX
+0250-8D              591 (   2)         GLO     HEXX
+0251-AA              592 (   2)         PLO     RA              ; IF SWITCH=0,
+0252-88              593 (   2)         GLO     R8              ;    IS "!M" COMMAND;
+0253-32 AB           594 (   2)         BZ      EX1             ;    GO TO EX1
+0255-                595        ;
+0255-                596        ; ?M COMMAND:  GET #BYTES TO TYPE
+0255-                597        ;
+0255-F8 00           598 (   2)         LDI     0               ; SET HEXX=0
+0257-AD              599 (   2)         PLO     HEXX
+0258-BD              600 (   2)         PHI     HEXX
+0259-D3              601 (   2) RD2     SEP     R3              ; GET KEYS & ASSEMBLE INTO HEX
+025A-33 59           602 (   2)         BDF     $-1
+025C-                603        ;
+025C-                604        ; DETERMINE IF TYPE OR MOVE COMMAND
+025C-                605        ;
+025C-8D              606 (   2) RD3     GLO     HEXX            ; SET #BYTES=HEXX
+025D-A8              607 (   2)         PLO     R8
+025E-9D              608 (   2)         GHI     HEXX
+025F-B8              609 (   2)         PHI     R8
+0260-9F              610 (   2)         GHI     ASCII           ; GET LAST KEY
+0261-FB 21           611 (   2) RD5     XRI     '!'             ; IF "!",
+0263-32 FA           612 (   2)         BZ      BRMOVE          ;    GO TO MOVE DATA
+0265-FB 01           613 (   2)         XRI     001H            ; IF "SPACE",
+0267-3A 6C           614 (   2)         BNZ     $+5             ;    IGNORE IT,
+0269-D3              615 (   2)         SEP     R3              ;    GET ANOTHER KEY
+026A-30 61           616 (   2)         BR      RD5             ;    REPEAT
+026C-FB 2D           617 (   2)         XRI     02DH            ; IF <CR>, GO TO TYPE
+026E-3A C1           618 (   2)         BNZ     SYNERR          ;    ELSE SYNTAX ERROR
+0270-                619        ;
+0270-                620        ; TYPE SPECIFIED DATA
+0270-                621        ;
+0270-F8 9C           622 (   2) RD4     LDI     #TYPE5D
+0272-A3              623 (   2)         PLO     R3
+0273-D3              624 (   2) NXLINE  SEP     R3              ; TYPE <LF>
+0274-0A              625                .DB     00AH
+0275-             S  626         .DO EFHI
+0275-             S  627                ;BN4    SYNERR          ; IF "BREAK", GO TO SYNTAX ERROR
+0275-             S  628                BN3     SYNERR          ; HRJ M/S card
+0275-                629         .EL
+0275-36 C1           630 (   2)         B3      SYNERR
+0277-                631         .FI
+0277-9A              632 (   2) LINE1   GHI     RA              ; TYPE ADDRESS OF POINTER:
+0278-BF              633 (   2)         PHI     ASCII
+0279-F8 AE           634 (   2)         LDI     #TYPE2
+027B-A3              635 (   2)         PLO     R3
+027C-D3              636 (   2)         SEP     R3              ; UPPER BYTE
+027D-8A              637 (   2)         GLO     RA
+027E-BF              638 (   2)         PHI     ASCII
+027F-F8 AE           639 (   2)         LDI     #TYPE2
+0281-A3              640 (   2)         PLO     R3
+0282-D3              641 (   2)         SEP     R3              ; LOWER BYTE
+0283-D3              642 (   2)         SEP     R3              ; TYPE A "SPACE"
+0284-20              643                .DB     ' '
+0285-4A              644 (   2) TLOOP   LDA     RA              ; GET BYTE @ POINTER, & ADVANCE POINTER
+0286-BF              645 (   2)         PHI     ASCII
+0287-F8 AE           646 (   2)         LDI     #TYPE2  ; TYPE BYTE
+0289-A3              647 (   2)         PLO     R3
+028A-D3              648 (   2)         SEP     R3
+028B-28              649 (   2)         DEC     R8              ; DECREMENT #BYTES
+028C-88              650 (   2)         GLO     R8
+028D-3A 92           651 (   2)         BNZ     TL3             ; IF #BYTES=0,
+028F-98              652 (   2)         GHI     R8              ;    GO TO RESTART
+0290-32 0F           653 (   2)         BZ      RESTART
+0292-8A              654 (   2) TL3     GLO     RA              ; IF LINE IS FULL (I.E. ADDRESS ENDS IN XXX0),
+0293-FA 0F           655 (   2)         ANI     00FH
+0295-3A 9D           656 (   2)         BNZ     TL2
+0297-D3              657 (   2)         SEP     R3              ;    TYPE <;>
+0298-3B              658                .DB     ';'
+0299-D3              659 (   2)         SEP     R3              ;    TYPE <CR>
+029A-0D              660                .DB     00DH
+029B-30 73           661 (   2)         BR      NXLINE          ;    GO TO NEXT LINE
+029D-F6              662 (   2) TL2     SHR                     ; IF ODD ADDRESS,
+029E-33 85           663 (   2)         BDF     TLOOP           ;    THEN TYPE NEXT BYTE
+02A0-30 83           664 (   2)         BR      TLOOP-2         ;    ELSE GO TYPE A "SPACE" FIRST
+02A2-                665        ;
+02A2-                666        ; !M COMMAND:  WRITES BYTES INTO MEMORY
+02A2-                667        ;
+02A2-D3              668 (   2) EX3     SEP     R3              ; GET KEYS UNTIL HEX
+02A3-3B A2           669 (   2)         BNF     $-1
+02A5-D3              670 (   2) EX2     SEP     R3              ; GET 2ND HEX KEY
+02A6-3B C1           671 (   2)         BNF     SYNERR          ; IF NOT HEX, SYNTAX ERROR
+02A8-8D              672 (   2)         GLO     HEXX            ; STORE BYTE AT ADDRESS,
+02A9-5A              673 (   2)         STR     RA              ; INCREMENT ADDRESS
+02AA-1A              674 (   2)         INC     RA
+02AB-D3              675 (   2) EX1     SEP     R3              ; GET NEXT KEY
+02AC-33 A5           676 (   2)         BDF     EX2             ; IF HEX, ASSEMBLE INTO ADDRESS AND REPEAT
+02AE-FB 0D           677 (   2)         XRI     00DH            ; IF <CR>,
+02B0-32 0F           678 (   2)         BZ      RESTART         ;    DONE: GO TO RESTART
+02B2-FB 21           679 (   2) EX4     XRI     021H            ; IF <,>,
+02B4-32 A2           680 (   2)         BZ      EX3             ;    CONTINUE ON NEW LINE
+02B6-FB 17           681 (   2)         XRI     017H            ; IF <;>, CONTINUE
+02B8-3A AB           682 (   2)         BNZ     EX1             ;    ELSE IGNORE KEY & REPEAT
+02BA-D3              683 (   2)         SEP     R3              ; IF <:>,
+02BB-FB 0D           684 (   2)         XRI     00DH            ;    IGNORE FURTHER KEYS UNTIL <CR>
+02BD-3A BA           685 (   2)         BNZ     $-3
+02BF-30 44           686 (   2)         BR      RD1             ; THEN CONTINUE ON NEW LINE WITH A NEW ADDRESS
+02C1-                687        ;
+02C1-                688        ; SYNTAX ERROR
+02C1-                689        ;
+02C1-F8 9C           690 (   2) SYNERR  LDI     #TYPE5D ; POINT TO TYPE5D
+02C3-A3              691 (   2)         PLO     R3
+02C4-D3              692 (   2)         SEP     R3              ; TYPE <CR>
+02C5-0D              693                .DB     00DH
+02C6-D3              694 (   2)         SEP     R3              ; <LF>
+02C7-0A              695                .DB     00AH
+02C8-D3              696 (   2)         SEP     R3              ; <?>
+02C9-3F              697                .DB     '?'
+02CA-30 0F           698 (   2)         BR      RESTART         ; AND RESTART
+02CC-                699        ;
+02CC-                700        ; $P AND $R COMMANDS
+02CC-                701        ;
+02CC-D3              702 (   2) DOLLAR  SEP     R3              ; GET KEY
+02CD-FB 52           703 (   2)         XRI     'R'             ; IF "R",
+02CF-A8              704 (   2)         PLO     R8              ;    SET SWITCH=0
+02D0-CE              705 (   3)         LSZ                     ; IF "P",
+02D1-FB 02           706 (   2)         XRI     002H            ;    LEAVE SWITCH>0
+02D3-3A 1C           707 (   2)         BNZ     IGNORE          ; IGNORE ALL ELSE
+02D5-                708        ;
+02D5-                709        ; GET NUMBER FOR $R OR $P COMMAND
+02D5-                710        ;
+02D5-D3              711 (   2) D1      SEP     R3              ; GET NEXT KEY
+02D6-33 D5           712 (   2)         BDF     $-1             ; IF HEX, ASSEMBLE ADDRESS & REPEAT
+02D8-FB 0D           713 (   2)         XRI     00DH            ; IF NOT <CR>,
+02DA-3A C1           714 (   2)         BNZ     SYNERR          ;    GO TO SYNTAX ERROR
+02DC-9D              715 (   2)         GHI     HEXX            ; PUT NUMBER IN R0
+02DD-B0              716 (   2)         PHI     R0
+02DE-8D              717 (   2)         GLO     HEXX
+02DF-A0              718 (   2)         PLO     R0
+02E0-F8 9C           719 (   2)         LDI     #TYPE5D ; TYPE <LF>
+02E2-A3              720 (   2)         PLO     R3
+02E3-D3              721 (   2)         SEP     R3
+02E4-0A              722                .DB     00AH
+02E5-88              723 (   2)         GLO     R8              ; IF SWITCH>0,
+02E6-32 FE           724 (   2)         BZ      RESTORE         ;    IS "$P" COMMAND; CONTINUE
+02E8-                725        ;
+02E8-                726        ; $P COMMAND:  BEGIN EXECUTION AT SPECIFIED ADDRESS WITH P=X=0, IE=1
+02E8-                727        ;
+02E8-F8 C1           728 (   2)         LDI     #INTERUPT       ; SET R1 FOR BREAKPOINT INTERRUPT
+02EA-A1              729 (   2)         PLO     R1
+02EB-95              730 (   2)         GHI     R5
+02EC-FF 02           731 (   2)         SMI     2
+02EE-B1              732 (   2)         PHI     R1
+02EF-E5              733 (   2)         SEX     R5              ; EXECUTE AT ADDRESS IN R0!
+02F0-70              734 (   2)         RET
+02F1-00              735                .DB     0
+02F2-30 FF           736 (   2)         BR      RESET+02FFH             ; BRANCH OVER PAGE JUMPS HRJ add offset
+02F4-                737                .NO     RESET+02F4H             ; PAGE JUMPS: ALLOW RELOCATABLE BRANCH TO PAGE 3
+02F4-30 C1           738 (   2)         BR      SYNERR
+02F6-C4              739 (   2)         NOP
+02F7-C4              740 (   2)         NOP
+02F8-30 0F           741 (   2)         BR      RESTART
+02FA-95              742 (   2) BRMOVE  GHI     R5              ; GO TO "MOVE" JUMP ON PAGE 3
+02FB-FC 01           743 (   2)         ADI     1
+02FD-B5              744 (   2)         PHI     R5
+02FE-                745        ;
+02FE-                746        ; $R COMMAND:  RESTORE ALL CPU REGISTERS (EXCEPT "T") TO THE VALUES SAVED
+02FE-                747        ;       IN RAM, & EXECUTE WITH THE SPECIFIED VALUES OF X AND P.
+02FE-                748        ;
+02FE-                749        ;       NOTE: REGISTER NAMES IN PARENTHESES INDICATE THE VALUE IN RAM TO
+02FE-                750        ;       BE RESTORED TO THAT REGISTER.
+02FE-                751        ;
+02FE-92              752 (   2) RESTORE GHI     R2              ; R2=POINTER TO RAM WHERE INITIALIZATION
+02FF-B3              753 (   2)         PHI     R3              ; PROGRAM WILL BE ASSEMBLED
+0300-F8 BF           754 (   2)         LDI     0B8H+7
+0302-A2              755 (   2)         PLO     R2
+0303-E2              756 (   2)         SEX     R2
+0304-F8 C1           757 (   2)         LDI     0B8H+9          ; START ASSEMBLING LBR INSTRUCTION
+0306-52              758 (   2)         STR     R2
+0307-80              759 (   2)         GLO     R0              ; ASSEMBLE LBR(R(P)) AS LAST OPCODE
+0308-AD              760 (   2)         PLO     HEXX
+0309-                761                ; PLO   HEXX            ; incorrect duplicate HRJ jan 19 2014
+0309-FA 0F           762 (   2)         ANI     00FH            ; - GET (P)
+030B-FE              763 (   2)         SHL                     ; - SET POINTER TO (R(P))
+030C-F4              764 (   2)         ADD
+030D-A3              765 (   2)         PLO     R3
+030E-03              766 (   2)         LDN     R3              ; - ASSEMBLE (R(P)) INTO INIT. PROGRAM
+030F-73              767 (   2)         STXD
+0310-F8 A8           768 (   2)         LDI     0A8H            ; - CHANGE ORIGINAL (R(P)) TO POINT TO XX9E
+0312-53              769 (   2)         STR     R3              ;   SO EXECUTION CAN CONTINUE WHEN (P)=>P
+0313-23              770 (   2)         DEC     R3
+0314-03              771 (   2)         LDN     R3
+0315-73              772 (   2)         STXD
+0316-92              773 (   2)         GHI     R2
+0317-53              774 (   2)         STR     R3
+0318-F0              775 (   2)         LDX                     ; - RESTORE (Q) TO Q
+0319-CE              776 (   3)         LSZ                     ;   IF (Q)=1,
+031A-7B              777 (   2)         SEQ                     ;       THEN SET Q
+031B-38              778 (   2)         SKP                     ;       ELSE RESET Q
+031C-7A              779 (   2)         REQ
+031D-F8 C0           780 (   2)         LDI     0C0H            ; - FINISH TEMPLATE LBR INSTRUCTION
+031F-73              781 (   2)         STXD
+0320-                782        ;
+0320-                783        ; ASSEMBLE LDI OPCODE TO INITIALIZE (D)
+0320-                784        ;
+0320-F0              785 (   2)         LDX                     ; GET (IE) & SAVE FOR LATER
+0321-BD              786 (   2)         PHI     HEXX
+0322-22              787 (   2)         DEC     R2              ; ASSMBLE LDI OPCODE TO INITIALIZE D
+0323-72              788 (   2)         LDXA
+0324-73              789 (   2)         STXD                    ; - ASSEMBLE (D)
+0325-F8 F8           790 (   2)         LDI     0F8H            ; - ASSEMBLE LDI
+0327-73              791 (   2)         STXD
+0328-F0              792 (   2)         LDX                     ; RESTORE (DF) TO DF
+0329-F6              793 (   2)         SHR
+032A-F8 A2           794 (   2)         LDI     0A2H            ; ASSEMBLE PLO R2 TO INITIALIZE R2.0
+032C-73              795 (   2)         STXD
+032D-F8 C5           796 (   2)         LDI     0B8H+13
+032F-A3              797 (   2)         PLO     R3              ; - ASSEMBLE (R2.0)
+0330-03              798 (   2)         LDN     R3
+0331-73              799 (   2)         STXD
+0332-F8 F8           800 (   2)         LDI     0F8H            ; - ASSEMBLE LDI
+0334-73              801 (   2)         STXD
+0335-                802        ;
+0335-                803        ; NOW RESTORE ALL R'S EXCEPT R2 & R5
+0335-                804        ;
+0335-F8 C0           805 (   2)         LDI     0B8H+8          ; SET R2 TO (R0)
+0337-A2              806 (   2)         PLO     R2
+0338-F0              807 (   2)         LDX                     ; (R0)=>R0
+0339-B0              808 (   2)         PHI     R0
+033A-9D              809 (   2)         GHI     HEXX            ; GET (IE) & SAVE IN (R0.1)
+033B-52              810 (   2)         STR     R2
+033C-12              811 (   2)         INC     R2
+033D-F0              812 (   2)         LDX
+033E-A0              813 (   2)         PLO     R0
+033F-8D              814 (   2)         GLO     HEXX            ; GET (XP) & SAVE IN (R0.0)
+0340-52              815 (   2)         STR     R2
+0341-12              816 (   2)         INC     R2
+0342-72              817 (   2)         LDXA                    ; (R1)=>R1
+0343-B1              818 (   2)         PHI     R1
+0344-72              819 (   2)         LDXA
+0345-A1              820 (   2)         PLO     R1
+0346-60              821 (   2)         IRX                     ; SKIP (R2)
+0347-60              822 (   2)         IRX
+0348-72              823 (   2)         LDXA                    ; (R3)=>R3
+0349-B3              824 (   2)         PHI     R3
+034A-72              825 (   2)         LDXA
+034B-A3              826 (   2)         PLO     R3
+034C-72              827 (   2)         LDXA                    ; (R4)=>R4
+034D-B4              828 (   2)         PHI     R4
+034E-72              829 (   2)         LDXA
+034F-A4              830 (   2)         PLO     R4
+0350-60              831 (   2)         IRX                     ; SKIP (R5)
+0351-60              832 (   2)         IRX
+0352-72              833 (   2)         LDXA                    ; (R6)=>R6
+0353-B6              834 (   2)         PHI     R6
+0354-72              835 (   2)         LDXA
+0355-A6              836 (   2)         PLO     R6
+0356-72              837 (   2)         LDXA                    ; (R7)=>R7
+0357-B7              838 (   2)         PHI     R7
+0358-72              839 (   2)         LDXA
+0359-A7              840 (   2)         PLO     R7
+035A-72              841 (   2)         LDXA                    ; (R8)=>R8
+035B-B8              842 (   2)         PHI     R8
+035C-72              843 (   2)         LDXA
+035D-A8              844 (   2)         PLO     R8
+035E-72              845 (   2)         LDXA                    ; (R9)=>R9
+035F-B9              846 (   2)         PHI     R9
+0360-72              847 (   2)         LDXA
+0361-A9              848 (   2)         PLO     R9
+0362-72              849 (   2)         LDXA                    ; (RA)=>RA
+0363-BA              850 (   2)         PHI     RA
+0364-72              851 (   2)         LDXA
+0365-AA              852 (   2)         PLO     RA
+0366-72              853 (   2)         LDXA                    ; (RB)=>RB
+0367-BB              854 (   2)         PHI     RB
+0368-72              855 (   2)         LDXA
+0369-AB              856 (   2)         PLO     RB
+036A-72              857 (   2)         LDXA                    ; (RC)=>RC
+036B-BC              858 (   2)         PHI     RC
+036C-72              859 (   2)         LDXA
+036D-AC              860 (   2)         PLO     RC
+036E-72              861 (   2)         LDXA                    ; (RD)=>RD
+036F-BD              862 (   2)         PHI     RD
+0370-72              863 (   2)         LDXA
+0371-AD              864 (   2)         PLO     RD
+0372-72              865 (   2)         LDXA                    ; (RE)=>RE
+0373-BE              866 (   2)         PHI     RE
+0374-72              867 (   2)         LDXA
+0375-AE              868 (   2)         PLO     RE
+0376-72              869 (   2)         LDXA                    ; (RF)=>RF
+0377-BF              870 (   2)         PHI     RF
+0378-F0              871 (   2)         LDX
+0379-AF              872 (   2)         PLO     RF
+037A-                873        ;
+037A-                874        ; CHANGE PROGRAM COUNTER TO DESIRED REGISTER
+037A-                875        ;
+037A-30 9E           876 (   2)         BR      BRCHANGE        ; THIS IS LOCATION FOR A RELOCATABLE
+037C-                877        ;                                 "BR" TO PAGE WHERE THE PC IS LOCATED
+037C-                878        ;
+037C-                879        ; BLOCK MOVE COMMAND  (?MXXXX XX !MXXXX)
+037C-                880        ;
+037C-D3              881 (   2) MOVE    SEP     R3              ; GET NEXT KEY
+037D-FB 4D           882 (   2)         XRI     'M'             ; IF "M",
+037F-3A 86           883 (   2)         BNZ     $+7             ;    THEN CLEAR HEXX
+0381-BD              884 (   2)         PHI     HEXX            ;    ELSE SYNTAX ERROR
+0382-AD              885 (   2)         PLO     HEXX
+0383-D3              886 (   2)         SEP     R3              ; GET HEX ADDRESS OF DESTINATION
+0384-33 83           887 (   2)         BDF     $-1
+0386-FB 0D           888 (   2)         XRI     00DH            ; IF NOT <CR>,
+0388-3A F0           889 (   2)         BNZ     BRSYNERR        ;    GO TO SYNTAX ERROR
+038A-                890        ;
+038A-                891        ; TEST IF MOVE UP/MOVE DOWN (TRICKY WITHOUT RAM)
+038A-                892        ;
+038A-9A              893 (   2)         GHI     RA              ; COPY SOURCE ADDRESS INTO R3
+038B-B3              894 (   2)         PHI     R3
+038C-8A              895 (   2)         GLO     RA
+038D-A3              896 (   2)         PLO     R3
+038E-9D              897 (   2)         GHI     HEXX            ; COPY DESTINATION INTO RF
+038F-BF              898 (   2)         PHI     RF
+0390-8D              899 (   2)         GLO     HEXX
+0391-AF              900 (   2)         PLO     RF
+0392-93              901 (   2) UPDOWN  GHI     R3              ; - IF SOURCE=0,
+0393-3A 96           902 (   2)         BNZ     $+3             ;       SOURCE<DESTINATION; MOVE DATA UP
+0395-83              903 (   2)         GLO     R3
+0396-32 AF           904 (   2)         BZ      MOVEUP
+0398-23              905 (   2)         DEC     R3              ;       DECREMENT SOURCE
+0399-9F              906 (   2)         GHI     RF              ; - IF DESTINATON=0
+039A-3A 9D           907 (   2)         BNZ     $+3             ;       SOURCE>DESTINATION; MOVE DATA DOWN
+039C-8F              908 (   2)         GLO     RF
+039D-C8              909 (   3)         LSKP                    ; SKIP TO CONTINUE
+039E-                910        ;-------------------------
+039E-                911        ; THE FOLLOWING LOCATION IS NEEDED FOR THE RELOCATABLE BRANCH TO THE
+039E-                912        ; PC CHANGE ROUTINE, WHICH HAS BEEN MOVED TO THE SAME PAGE AS REGISTER
+039E-                913        ; SAVE AREA.
+039E-                914        ;
+039E-92              915 (   2) BRCHANGE GHI    R2              ; GO TO PAGE THAT PROGRAM IS ON
+039F-B5              916 (   2)         PHI     R5
+03A0-                917        ;-------------------------
+03A0-                918        ;
+03A0-2F              919 (   2)         DEC     RF              ; DECREMENT DESTINATION
+03A1-3A 92           920 (   2)         BNZ     UPDOWN          ; DATA DOWN
+03A3-                921        ;
+03A3-                922        ; SOURCE > DESTINATION:  MOVE DATA DOWN
+03A3-                923        ;
+03A3-98              924 (   2) MOVEDN  GHI     R8              ; REPEAT...
+03A4-3A A7           925 (   2)         BNZ     $+3             ; ...UNTIL #BYTES=0
+03A6-88              926 (   2)         GLO     R8
+03A7-32 F4           927 (   2)         BZ      BRRESTRT        ; THEN RESTART
+03A9-4A              928 (   2)         LDA     RA              ; - LOAD VIA SOURCE
+03AA-5D              929 (   2)         STR     HEXX            ; - STORE VIA DESTINATION
+03AB-1D              930 (   2)         INC     HEXX            ; - INCREMENT POINTERS
+03AC-28              931 (   2)         DEC     R8              ; - DECREMENT #BYTES
+03AD-30 A3           932 (   2)         BR      MOVEDN
+03AF-                933        ;
+03AF-                934        ; SOURCE <= DESTINATION:  MOVE DATA UP
+03AF-                935        ;
+03AF-98              936 (   2) MOVEUP  GHI     R8              ; COPY #BYTES INTO R3
+03B0-B3              937 (   2)         PHI     R3
+03B1-88              938 (   2)         GLO     R8
+03B2-A3              939 (   2)         PLO     R3
+03B3-C8              940 (   3)         LSKP                    ; SET POINTERS TO HIGH END OF DATA
+03B4-1A              941 (   2) UP      INC     RA              ; REPEAT...
+03B5-1D              942 (   2)         INC     HEXX
+03B6-23              943 (   2)         DEC     R3              ; - INC. SOURCE
+03B7-93              944 (   2)         GHI     R3              ; - INC. DESTINATION
+03B8-3A B4           945 (   2)         BNZ     UP              ; - DEC. #BYTES
+03BA-83              946 (   2)         GLO     R3
+03BB-3A B4           947 (   2)         BNZ     UP              ; ...UNTIL #BYTES=0
+03BD-ED              948 (   2)         SEX     HEXX            ; REPEAT TO MOVE FROM TOP DOWN...
+03BE-98              949 (   2) MUP     GHI     R8              ; ...UNTIL #BYTES=0
+03BF-3A C2           950 (   2)         BNZ     $+3
+03C1-88              951 (   2)         GLO     R8
+03C2-32 F4           952 (   2)         BZ      BRRESTRT        ; THEN RESTART
+03C4-0A              953 (   2)         LDN     RA              ; - LOAD VIA SOURCE
+03C5-73              954 (   2)         STXD                    ; - STORE VIA DESTINATION
+03C6-2A              955 (   2)         DEC     RA              ; - DECREMENT POINTERS
+03C7-28              956 (   2)         DEC     R8
+03C8-30 BE           957 (   2)         BR      MUP
+03CA-                958        ;
+03CA-                959        ; THE FOLLOWING ROUTINE CHANGES THE PROGRAM COUNTER TO THE ONE DESIRED
+03CA-                960        ; IN A $R COMMAND. IT IS COPIED INTO RAM.
+03CA-                961        ;
+03CA-F8 C0           962 (   2) CHANGE  LDI     0B8H+8          ; SET POINTER TO SAVED (IE)
+03CC-A2              963 (   2)         PLO     R2
+03CD-72              964 (   2)         LDXA                    ; GET (IE)
+03CE-CE              965 (   3)         LSZ                     ; IF (IE)=1,
+03CF-70              966 (   2)         RET                     ;    THEN SET IE=1
+03D0-38              967 (   2)         SKP                     ;       (P)=>P, (X)=>X
+03D1-71              968 (   2)         DIS                     ;    ELSE SET IE=0
+03D2-                969        ;
+03D2-                970        ; NOW SET UP R5 (IF NOT PC), R2, & D
+03D2-                971        ;
+03D2-15              972 (   2) RHERE   INC     R5              ; IF R5 IS NOT THE PROGRAM COUNTER,
+03D3-C8              973 (   3)         LSKP                    ; THIS WILL GIVE CORRECT "BR" ADDRESS
+03D4-30 B3           974 (   2)         BR      RESET+03B3H     ; TO "R5PC" AFTER IT IS MOVED TO XXA0
+03D6-F8 CA           975 (   2)         LDI     0B8H+18         ; - SET POINTER TO (R5)
+03D8-A2              976 (   2)         PLO     R2
+03D9-42              977 (   2)         LDA     R2              ; - (R5)=>R5
+03DA-B5              978 (   2)         PHI     R5
+03DB-02              979 (   2)         LDN     R2
+03DC-A5              980 (   2)         PLO     R5
+03DD-F8 C4           981 (   2) R5PC    LDI     0C4H            ; - (R2.1)=>R2.1
+03DF-A2              982 (   2)         PLO     R2
+03E0-02              983 (   2)         LDN     R2
+03E1-B2              984 (   2)         PHI     R2
+03E2-                985        ;
+03E2-                986        ; SAMPLE TEMPLATE PROGRAM CREATED IN RAM
+03E2-                987        ;
+03E2-                988        ;       .OR     RESET+0XXB8H    ;HRJ offset
+03E2-                989        ;       LDI     (R2.0)          ; (R2.0)=>R2.0
+03E2-                990        ;       PLO     R2
+03E2-                991        ;       LDI     (D)             ; (D)=>D
+03E2-                992        ;       LBR     (R(P))          ; GO TO USER PROGRAM
+03F0                993                .NO     RESET+03F0H             ; PAGE JUMPS: ALLOWS RELOCATABLE LONG BRANCH
+03F0-                994        ;                               ; TO PAGE 2.
+03F0-                995        ;
+03F0-95              996 (   2) BRSYNERR GHI    R5              ; BR TO SYNEER
+03F1-FF 01           997 (   2)         SMI     1
+03F3-B5              998 (   2)         PHI     R5
+03F4-95              999 (   2) BRRESTRT GHI    R5              ; BR TO RESTART
+03F5-FF 01          1000 (   2)         SMI     1
+03F7-B5             1001 (   2)         PHI     R5
+03FE               1002                .NO     RESET+03FEH
+03FE-30 7C          1003 (   2)         BR      MOVE
+0400-               1004        ;
+0400-               1005                .EN
