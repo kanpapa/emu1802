@@ -26,6 +26,9 @@
 EFHI	.EQ	0	; 0=active low EF for serial
 QHI	.EQ	0	; 0=active low Q for serial
 ;
+; For EMU1802-mini using PIC18 UART
+; by Kazuhiro Ouchi July 2022
+;
 ; register equivalents for A18
 R0		.EQ	0
 R1		.EQ	1
