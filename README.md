@@ -11,7 +11,7 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 - [idiotmon](/idiotmon/) - IDIOT/4 monitor and sample programs
 - [kicad/emu1802_sch.pdf](/kicad/emu1802_sch.pdf) - schematic of EMU1802
 - [kicad/emu1802_mini_sch.pdf](/kicad/emu1802_mini_sch.pdf) - schematic of EMU1802-mini
-- [kicad/emu1802_mini_bom.pdf](/kicad/emu1802_mini_bom.pdf) - BOM of EMU1802-mini
+- [kicad/emu1802_mini_bom.md](/kicad/emu1802_mini_bom.md) - BOM of EMU1802-mini
 - [test_programs](/test_programs/) - Test programs for EMU1802 hardware
 - [tools/bin2hexsrc.py](/tools/bin2hexsrc.py) - A tool to convert binaries to HEX
 - [EMU1802mini_Setup_ja.md](/EMU1802mini_Setup_ja.md) - Setup manual for EMU1802mini (Japanese)
