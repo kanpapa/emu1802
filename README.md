@@ -26,6 +26,21 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 You can also refer to my blog. (in Japanese)  
 https://kanpapa.com/cosmac/blog/emu1802/
 
+## Pictures
+
+The EMU1802-mini
+![EMU1802-mini](/Pictures/emu1802-mini.jpg)
+
+Testing of the EMU1802-mini
+![EMU1802-mini](/Pictures/emu1802-mini-uart-test0703.jpg)
+
+The idiot monitor is working on the EMU1802-mini
+![The idiot monitor is working on emu1802-mini](/Pictures/emu1802-mini-idiot-monitor.jpg)
+
+Prototype of The EMU1802
+![Prototype of The EMU1802](/Pictures/emu1802-series.jpg)
+
+
 ## License Information
 References to any products, programs or services do not imply that they will be available in all countries in which their respective owner operates.  
 
