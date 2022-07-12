@@ -28,16 +28,16 @@ https://kanpapa.com/cosmac/blog/emu1802/
 
 ## Pictures
 
-The EMU1802-mini
+The EMU1802-mini  
 ![EMU1802-mini](/pictures/emu1802-mini.jpg)
 
-Testing of the EMU1802-mini
+Testing of the EMU1802-mini  
 ![Testing of EMU1802-mini](/pictures/emu1802-mini-uart-test0703.jpg)
 
-The idiot monitor is working on the EMU1802-mini
+The idiot monitor is working on the EMU1802-mini  
 ![The idiot monitor is working on emu1802-mini](/pictures/emu1802-mini-idiot-monitor.jpg)
 
-Prototype of The EMU1802
+Prototype of The EMU1802  
 ![Prototype of The EMU1802](/pictures/emu1802-series.jpg)
 
 
