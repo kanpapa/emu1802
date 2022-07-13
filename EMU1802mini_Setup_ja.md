@@ -1,8 +1,25 @@
-# EMU1802-miniのセットアップ
+# EMU1802-mini セットアップマニュアル
+
+## EMU1802-miniとは
+EMU1802-miniはCOSMAC CDP1802 CPUとPIC18F27Q43のみを搭載したシングルボードコンピュータです。  
+Tetsuya Suzuki氏が開発した[EMUZ80](https://vintagechips.wordpress.com/2022/03/05/emuz80_reference/)を参考にして製作しています。  
+COSMAC CPUについては[COSMAC研究会](https://kanpapa.com/cosmac/cosmac-cpu.html)のサイトをご覧ください。
+
+EMU1802-miniの完成写真  
+![EMU1802-mini](/pictures/emu1802-mini.jpg)
 
 ## ハードウェアの製作
-1. [回路図](/kicad/emu1802_mini_sch.pdf)と[BOM](/kicad/emu1802_mini_bom.md)を参考にしてパーツを入手します。
-1. 専用基板があれば基板に実装してハンダ付けします。基板がない場合はブレッドボードを使って配線しても良いでしょう。
+1. [回路図](/kicad/emu1802_mini_sch.pdf)と[BOM](/kicad/emu1802_mini_bom.md)を参考にしてパーツを入手してください。
+1.  [EMU1802-mini専用プリント基板](https://store.shopping.yahoo.co.jp/orangepicoshop/pico-A-057.html)があればパーツを基板に実装してハンダ付けします。基板がない場合はブレッドボードを使って配線しても良いでしょう。
+
+- [EMU1802-mini専用プリント基板](https://store.shopping.yahoo.co.jp/orangepicoshop/pico-A-057.html)について
+   - [オレンジピコショップ](https://store.shopping.yahoo.co.jp/orangepicoshop/)さんで購入できます。
+   - EMU1802-mini専用基板を使用する際の注意事項
+      - 基板には最低限の情報しかシルク印刷されていません。作業開始前に回路図を確認することをお勧めします。
+      - CON4は電源入力です。１番ピンがVccです。２番ピンと３番ピンはGNDです。誤ってショートしないように注意してください。
+      - CON2, CON3はUSBシリアルを接続するコネクタです。１番ピンがGNDになります。
+      - USBシリアルから電源を供給する場合は裏面のJP1またはJP2を半田でショートしてください。
+      - 省スペースのために1/6W抵抗を使用していますが、1/4W抵抗の場合はリード線を曲げて縦に取り付けてください。
 
 ## 開発環境の準備
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)が必要です。  
