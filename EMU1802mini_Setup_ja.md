@@ -23,6 +23,7 @@ EMU1802-miniの完成写真
 
 ## 開発環境の準備
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)が必要です。  
+- ファームウェアの書き込みには[MICROCHIP MPLAB SNAP](https://akizukidenshi.com/catalog/g/gM-13854)を使用します。
 - ファームウェアのROM領域を変更する場合は[SB-Assemblers](https://www.sbprojects.net/sbasm/)を使用します。Python3が動作する環境が必要です。私の場合はWSL2環境にインストールしています。  
 
 ## ファームウェアの書き込み手順
@@ -30,7 +31,7 @@ EMU1802-miniの完成写真
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
 1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
 1. ビルドを行いコンパイルができることを確認します。
-1. EMU1802-miniにSNAPを接続し、PCに接続します。
+1. EMU1802-miniのCON1にMPLAB SNAPを接続し、PCに接続します。
 1. EMU1802-miniの電源を投入します。
 1. ターゲットのPICに書き込みを行います。
 
