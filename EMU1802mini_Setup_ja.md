@@ -24,17 +24,17 @@ EMU1802-miniの完成写真
 
 ## 開発環境の準備
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)が必要です。  
-- ファームウェアの書き込みには[MICROCHIP MPLAB SNAP](https://akizukidenshi.com/catalog/g/gM-13854)を使用します。
+- ファームウェアの書き込みには[Microchip MPLAB SNAP](https://akizukidenshi.com/catalog/g/gM-13854)を使用します。
 - ファームウェアのROM領域を変更する場合は[SB-Assembler 3](https://www.sbprojects.net/sbasm/)を使用します。Python3が動作する環境が必要です。私の場合はWSL2環境にインストールしています。  
 
 ## ファームウェアの書き込み手順
 1. [emu1802mini.X](/emu1802.X)を適当な場所に展開します。
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
 1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
-1. ビルドを行いコンパイルができることを確認します。
-1. EMU1802-miniのCON1にMPLAB SNAPを接続し、PCに接続します。
+1. MPLAB IDEでビルドを行いコンパイルができることを確認します。
+1. EMU1802-miniのCON1にMPLAB SNAPを接続し、PCのUSBに接続します。
 1. EMU1802-miniの電源を投入します。
-1. ターゲットのPICに書き込みを行います。
+1. MPLAB IDEでターゲットのPICに書き込みを行います。
 
 ## EMU1802-miniの動作確認
 
@@ -99,7 +99,7 @@ IDIOT/4
 ## ファームウェアのカスタマイズ方法
 
 ### メモリマップの変更
-main.cの86〜88行で設定できます。現在はROMエリアは$0000-$0400、RAMエリアは$8000-8FFFとしています。
+main.cの以下の部分で設定できます。現在はROMエリアは$0000-$0400、RAMエリアは$8000-8FFFとしています。
 
 ```
 #define ROM_SIZE 0x0400 // ROM size 1k bytes
@@ -108,7 +108,7 @@ main.cの86〜88行で設定できます。現在はROMエリアは$0000-$0400�
 ```
 
 ### CPUクロックの変更
-main.cの77行目の値を変更します。現在は0.2MHzになっています。現在のファームウェアではこれ以上速くするとタイミングが合わなくなり動かなくなります。
+main.cの以下の部分の値を変更します。現在は0.2MHzになっています。現在のファームウェアではこれ以上速くするとタイミングが合わなくなり動かなくなります。
 
 ```
 #define Z80_CLK   200000UL // CDP1802 clock frequency(0.2MHz)
@@ -126,7 +126,7 @@ sbasm idiot_0000.asm
 ```
 python3 bin2hexsrc.py idiot_0000.bin > idiot_0000.hexsrc
 ```
-生成された16進データを405行目ののrom配列に組み込んでください。  
+生成された16進データを以下のrom配列の部分に組み込んでください。  
 組み込むデータがROM_SIZEを超えてしまう場合はメモリマップを調整してください。
 ```
 const unsigned char rom[ROM_SIZE] = {
@@ -137,8 +137,8 @@ const unsigned char rom[ROM_SIZE] = {
 ## 制限事項
 
 EMU1802-miniはCPU以外の周辺デバイスをPICに置き換えています。このため以下の制限事項があります。
-- CPUクロックは高速にできません。200KHzでの動作を推奨します。
-- RESETを押すとRAM領域が初期化されます。普通のRAMですと電源が入っていればメモリの状態が保持されますが、PICがリセットされるのでRAMエリアは初期化されます。このため後述するIDIOTモニタの割り込みを活用してください。
+- 通常のRAMにくらべてPICからの読み込みは遅く、CPUクロックは速くできません。200KHzでの動作を推奨します。
+- RESETを押すとRAM領域が初期化されます。通常のRAMですと電源が入っていればメモリの状態が保持されますが、PICがリセットされるのでRAMエリアは初期化されます。このため後述するIDIOTモニタの割り込みを活用してください。
 - CPUのクロックが高速化できないため、ターミナルからの入力で文字を取りこぼす場合があります。特にテキストをアップロードする時は適切な送信遅延を入れてください。ソフトウェアシリアルの場合は50ミリ秒/字、500ミリ秒/行程度。UARTの場合はその10分の１程度は必要です。
 
 ## EMU1802-miniでのCOSMAC CPUの楽しみ方
@@ -193,3 +193,7 @@ SEP R1命令（バイナリではD1）を実行すると、ハードウェア割
 $Rコマンドを入力することで、RAM領域に保存されている情報がレジスタに書き戻され、中断したプログラムを再開することもできます。再開前にRAM領域を書き換えることで各レジスタを任意の値に設定してプログラムを再開することもできます。  
 
 このようにプログラムのデバックやCOSMAC CPUの学習に活用できます。
+
+## 参考ブログ
+
+https://kanpapa.com/cosmac/blog/emu1802/
