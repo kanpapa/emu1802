@@ -19,7 +19,8 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 
 ## Development tools
 - [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)
-- [SB-Assemblers](https://www.sbprojects.net/sbasm/)
+- [Microchip MPLAB SNAP](https://www.microchip.com/en-us/development-tool/PG164100)
+- [SB-Assembler 3](https://www.sbprojects.net/sbasm/)
 - Python3
 
 ## Blog
