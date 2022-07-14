@@ -1,7 +1,8 @@
 # EMU1802-mini セットアップマニュアル
 
 ## EMU1802-miniとは
-EMU1802-miniはCOSMAC CDP1802 CPUとPIC18F27Q43のみを搭載したシングルボードコンピュータです。  
+EMU1802-miniはCOSMAC CDP1802 CPUとPIC18F27Q43だけで動作するシングルボードコンピュータです。 
+PIC18F27Q43とPICに書き込むファームウェアで周辺デバイスであるROM, RAM, UARTの機能を実現しています。 
 Tetsuya Suzuki氏が開発した[EMUZ80](https://vintagechips.wordpress.com/2022/03/05/emuz80_reference/)を参考にして製作しています。  
 COSMAC CPUについては[COSMAC研究会](https://kanpapa.com/cosmac/cosmac-cpu.html)のサイトをご覧ください。
 これまでの経緯をまとめた[EMU1802アーカイブ](https://kanpapa.com/cosmac/blog/emu1802/)もあります。
