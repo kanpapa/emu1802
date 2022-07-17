@@ -5,9 +5,9 @@ It has been written to the PIC18F27Q43 with MPLAB X IPE v6.00 and MPLAB SNAP and
 ## Repository Contents
 There are two versions of the firmware.
 
-- [V1_0](production/emu1802mini/v1_0) : V1.0 - Original version of the IDIOT monitor, with ORG address changed to 0000H is included in the firmware. 300 bps is available.
+- [V1_0](/production/emu1802mini/v1_0) : V1.0 - Original version of the IDIOT monitor, with ORG address changed to 0000H is included in the firmware. 300 bps is available.
 
-- [V1_1](production/emu1802mini/v1_1) : V1.1 - The IDIOT monitor that can use UART of PIC18F27Q43 is included in the firmware. 9600bps is available.
+- [V1_1](/production/emu1802mini/v1_1) : V1.1 - The IDIOT monitor that can use UART of PIC18F27Q43 is included in the firmware. 9600bps is available.
 
 ## License Information
 This firmware includes the IDIOT monitor.
