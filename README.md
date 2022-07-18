@@ -10,6 +10,7 @@ The EMU1802-mini is replacement the PIC of the EMU1802 with a PIC18F27Q43.
 ## Repository Contents
 - [emu1802.X](/emu1802.X/) - PIC18F47Q43 ROM RAM and UART emulation firmware for EMU1802
 - [emu1802mini.X](/emu1802mini.X/) - PIC18F27Q43 ROM RAM and UART emulation firmware for EMU1802-mini
+- [production](/production/) - Firmware hex files for EMU1802-mini
 - [idiotmon](/idiotmon/) - IDIOT/4 monitor and sample programs
 - [kicad/emu1802_sch.pdf](/kicad/emu1802_sch.pdf) - schematic of EMU1802
 - [kicad/emu1802_mini_sch.pdf](/kicad/emu1802_mini_sch.pdf) - schematic of EMU1802-mini
