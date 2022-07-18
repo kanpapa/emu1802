@@ -28,7 +28,8 @@ EMU1802-miniの完成写真
 - ファームウェアの書き込みには[Microchip MPLAB SNAP](https://akizukidenshi.com/catalog/g/gM-13854)を使用します。
 - ファームウェアのROM領域を変更する場合は[SB-Assembler 3](https://www.sbprojects.net/sbasm/)を使用します。Python3が動作する環境が必要です。私の場合はWSL2環境にインストールしています。  
 
-## ファームウェアの書き込み手順
+## ファームウェアのビルドと書き込み手順
+EMU1802-miniはCOSMACのプログラムをPICのファームウェアに組み込んで使います。好きなプログラムを動かすためにはファームウェアのビルドは必須です。
 1. [emu1802mini.X](/emu1802.X)を適当な場所に展開します。
 1. [Microchip MPLAB IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)を起動します。
 1. プロジェクトを開くで展開したemu1802mini.Xフォルダを指定して開きます。
@@ -36,6 +37,16 @@ EMU1802-miniの完成写真
 1. EMU1802-miniのCON1にMPLAB SNAPを接続し、PCのUSBに接続します。
 1. EMU1802-miniの電源を投入します。
 1. MPLAB IDEでターゲットのPICに書き込みを行います。
+
+## ビルド済みファームウェアの書き込み手順
+[production](/production)にIDIOTモニタが含まれたビルド済のファームウェアのHEXファイルがありますので、これを利用することもできます。
+1. 使用したいファームウェアをダウンロードしてください。ファームウェアは2種類あります。詳しくは[README.md](/production/emu1802mini/README.md)を参照してください。
+1. EMU1802-miniのCON1にMPLAB SNAPを接続し、PCのUSBに接続します。
+1. EMU1802-miniの電源を投入します。
+1. MPLAB X IPEを起動します。
+1. Device and Tool Selectionで、DeviceでPIC18F27Q43を選択し、ToolはSNAPを選択してください。
+1. Hex FileのBrowseボタンを押して、ダウンロードしたファームウェアのHEXファイルを指定してください。
+1. Erase→Blank Check→Program→Verifyを順に実行し、ターゲットのPICに書き込みます。
 
 ## EMU1802-miniの動作確認
 
