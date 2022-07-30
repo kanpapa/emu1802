@@ -66,3 +66,9 @@ IDIOT/4 MONITOR FOR THE 1802
   This program may be used for any noncommercial use free of charge.  
   fixes by Herb Johnson HRJ April 2010, Jan 2014  
   https://www.retrotechnology.com/memship/mship_idiot.html
+
+Thanks to Gazelle for optimizing the firmware.  
+
+  Modified by Gazelle  
+  https://drive.google.com/drive/folders/14-OX5THzVz1BVxLPXheExVnpIBqS79NJ  
+  1st release 2022-7-29
