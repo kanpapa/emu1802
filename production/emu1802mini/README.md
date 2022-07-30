@@ -9,6 +9,8 @@ There are two versions of the firmware.
 
 - [v1_1](/production/emu1802mini/v1_1) : V1.1 - The IDIOT monitor that can use UART of PIC18F27Q43 is included in the firmware. 9600bps is available.
 
+- [v2_1G](/production/emu1802mini/v2_1G) : V2.1G - Speedup to 1.79 MHz. Modified by Gazelle. 9600bps is available.
+
 ## License Information
 This firmware includes the IDIOT monitor.
 Please use it in compliance with the copyright and terms of use of the IDIOT Monitor.
