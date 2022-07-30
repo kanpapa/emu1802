@@ -26,7 +26,7 @@ EMU1802-miniの完成写真
 ## 開発環境の準備
 - [Microchip MPLAB X IDE v6.00](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide)が必要です。  
 - ファームウェアの書き込みには[Microchip MPLAB SNAP](https://akizukidenshi.com/catalog/g/gM-13854)を使用します。
-- ファームウェアのROM領域を変更する場合は[SB-Assembler 3](https://www.sbprojects.net/sbasm/)を使用します。Python3が動作する環境が必要です。私の場合はWSL2環境にインストールしています。  
+- ファームウェアのROM領域を変更する場合は[SB-Assembler 3](https://www.sbprojects.net/sbasm/)を使用します。このアセンブラはPython3で書かれているため、LinuxやMacやWindowsでPython3が動けば動作します。私の場合はWSL2環境にインストールしています。  
 
 ## ファームウェアのビルドと書き込み手順
 EMU1802-miniはCOSMACのプログラムをPICのファームウェアに組み込んで使います。好きなプログラムを動かすためにはファームウェアのビルドは必須です。
@@ -211,4 +211,4 @@ $Rコマンドを入力することで、RAM領域に保存されている情報
 
 ## 参考ブログ
 
-https://kanpapa.com/cosmac/blog/emu1802/
+- https://kanpapa.com/cosmac/blog/emu1802/
