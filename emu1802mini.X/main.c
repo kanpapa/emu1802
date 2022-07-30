@@ -1,5 +1,5 @@
 /*
-  PIC18F47Q43 ROM RAM and UART emulation firmware
+  PIC18F27Q43 ROM RAM and UART emulation firmware
   This single source file contains all code
 
   Target: EMUZ80 - The computer with only Z80 and PIC18F47Q43
@@ -8,9 +8,16 @@
 
   Target: EMU1802mini - The computer with only COSMAC CDP1802 and PIC18F27Q43
   Modifed by Kazuhiro Ouchi
-  V1.0 2022-06-19
-  V1.1 2022-07-03
-*/
+  V1.0 2022-06-19 - 1st release.
+  V1.1 2022-07-03 - Support for PIC UART.
+  V2.1G 2022-07-30 - Thanks to Gazelle for speedup to 1.79 MHz. (Optimization required. -O2)
+ * 
+ * 
+ * Modified by Gazelle
+ * https://drive.google.com/drive/folders/14-OX5THzVz1BVxLPXheExVnpIBqS79NJ
+ * 1st release 2022-7-29
+ * 
+ */
 
 //
 // EMU1802-mini
@@ -90,7 +97,7 @@
 
 // CDP1802
 //#define Z80_CLK 1800000UL // CDP1802 clock frequency(1.8MHz)
-#define Z80_CLK   200000UL // CDP1802 clock frequency(0.2MHz)
+#define Z80_CLK   1790000UL // CDP1802 clock frequency(2MHz)
 
 // for Low address test ($0000-$00FF)
 //#define ROM_SIZE 0x80 // ROM size 128 bytes
@@ -364,25 +371,67 @@ void main(void) {
     // COSMAC TPA(RA3) Riging edge
     INT0PPS = 0x3; //RA3->INTERRUPT MANAGER:INT0; for EMU1802mini
     INT0EDG = 1; // 0: Falling edge 1: Rising edge
-    INT0IE = 1;
+//  INT0IE = 1;
+    INT0IE = 0;
    
     // INT1 VI enable
     // COSMAC TPB(RA2) Riging edge
     INT1PPS = 0x2; //RA2->INTERRUPT MANAGER:INT1; for EMU1802mini
     INT1EDG = 1; // 0: Falling edge 1: Rising edge
-    INT1IE = 1;
+//  INT1IE = 1;
+    INT1IE = 0;
 
     // INT2 VI enable
     // COSMAC MWR(RA0) Falling edge
     INT2PPS = 0x0; //RA0->INTERRUPT MANAGER:INT2; for EMU1802mini
     INT2EDG = 0; // 0: Falling edge 1: Rising edge
-    INT2IE = 1;
+//  INT2IE = 1;
+    INT2IE = 0;
 
     // COSMAC start
     GIE = 1; // Global interrupt enable
     LATA1 = 1; // Release reset COSMAC ~CLEAR(RA1) for mini
     
-    while(1); // All things come to those who wait
+//  while(1); // All things come to those who wait
+    while(1){
+
+        while(!RA3);            // Waiting TPA = H
+        address.h = PORTB;      // Read address high
+        while(RA3);             // Waiting TPA = L
+        while(RA4);             // Waiting CLOCK = L  (Now in T30 state) 
+        while(!RA4);            // Waiting CLOCK = H  (Now in T31 state)
+        address.l = PORTB;      // Now address.l available
+        
+        if(!RA5){               // _MRD line already determined
+            db_setout();        // Set data bus as output
+            
+            if(address.w < ROM_SIZE)                // ROM area
+                LATC = rom[address.w];              // Out ROM data
+            else if((address.w >= RAM_TOP) && (address.w < (RAM_TOP + RAM_SIZE))) // RAM area
+                LATC = ram[address.w - RAM_TOP];    // RAM data
+            else if(address.w == UART_CREG)         // UART control register
+                LATC = PIR9;                        // U3 flag
+            else if(address.w == UART_DREG)         // UART data register
+                LATC = U3RXB;                       // U3 RX buffer
+            else                                    // Out of memory
+                LATC = 0xff;                        // Invalid data
+
+            while(!RA5);                            // keep databus active while _MRD=L
+            db_setin();                             // rlease databus
+        }
+
+        else {
+            while(!RA2){                            // Waiting _MWR =L  while TPB = L
+                if(!RA0){                           // Now in memory write cycle
+                    if((address.w >= RAM_TOP) && (address.w < (RAM_TOP + RAM_SIZE))) // RAM area
+                        ram[address.w - RAM_TOP] = PORTC;   // Write into RAM
+                    else if(address.w == UART_DREG)
+                         U3TXB = PORTC;             // Write into U3 TX buffer
+                    break;                          // erxit _MWR cycle
+                }
+            }
+        }
+    }
 }
 
 // blink program 1
@@ -492,7 +541,7 @@ const unsigned char rom[ROM_SIZE] = {
     0x1B, 0xFC, 0x21, 0xFC, 0x7F, 0xB4, 0x51, 0xF3,
     0x3A, 0x28, 0xD1, 0x51, 0x21, 0x21, 0x30, 0x0D, // 0020
     0x30, 0x28, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-           
+
 // Program 6: IDIOT (0000-03FF) Using Software serial of COSMAC
 // ORG:0000 EFHI:0 QHI:0
 0x71,0x00,0xF8,0xFF,0xB4,0xF8,0xFF,0xA4,0x54,0x04,0xFB,0xFF,0xC6,0x54,0x04,0x32,
@@ -558,8 +607,8 @@ const unsigned char rom[ROM_SIZE] = {
 0xC2,0x88,0x32,0xF4,0x0A,0x73,0x2A,0x28,0x30,0xBE,0xF8,0xC0,0xA2,0x72,0xCE,0x70,
 0x38,0x71,0x15,0xC8,0x30,0xB3,0xF8,0xCA,0xA2,0x42,0xB5,0x02,0xA5,0xF8,0xC4,0xA2,
 0x02,0xB2,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-0x95,0xFF,0x01,0xB5,0x95,0xFF,0x01,0xB5,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x7C            
-
+0x95,0xFF,0x01,0xB5,0x95,0xFF,0x01,0xB5,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x7C
+        
 // Program 7: HELLO WORLD and ECHO BACK Using UART of PIC18F27Q43 ($0000-$003F)
 0xF8,0x00,0xB1,0xF8,0x2C,0xA1,0xE1,0xF8,0xE0,0xB2,0xB3,0xF8,0x00,0xA2,0xF8,0x01,
 0xA3,0x03,0xFA,0x02,0x32,0x11,0x72,0x32,0x1C,0x52,0x30,0x11,0x03,0xFA,0x01,0x32,
@@ -632,5 +681,5 @@ const unsigned char rom[ROM_SIZE] = {
 0x38,0x71,0x15,0xC8,0x30,0xB3,0xF8,0xCA,0xA2,0x42,0xB5,0x02,0xA5,0xF8,0xC4,0xA2,
 0x02,0xB2,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 0x95,0xFF,0x01,0xB5,0x95,0xFF,0x01,0xB5,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x7C
-
+        
 };
